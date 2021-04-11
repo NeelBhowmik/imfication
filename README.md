@@ -1,16 +1,14 @@
-# cnn-material-classifiation
+# Image classification torch
 
-Tested using Python >= 3.8.x, [PyTorch >= 1.7](https://pytorch.org/).
+Tested using Python >= 3.6.x, [PyTorch >= 1.7](https://pytorch.org/).
 
-## Architectures:
-![Architectures](images/arch.png)
 ---
 ## Installation
-The code is tested on Ubuntu 20.04.  
+The code is tested on Ubuntu 18.04 / 20.04.  
 ### Requirements for Deskop/Laptop
-1. Linux (Ubuntu >= 20.04 distribution)
+1. Linux (Ubuntu >= 18.04 / 20.04 distribution)
 2. CUDA >= 11.0, cuDNN >= 8.1.0
-3. Python ≥ 3.8
+3. Python ≥ 3.6
 
 ### Steps
 0. [Optional] create a new virtual environment.
@@ -26,7 +24,7 @@ The code is tested on Ubuntu 20.04.
     ~~~
 1. First clone the repository:
     ~~~
-    git clone https://github.com/NeelBhowmik/cnn-material-classifiation.git
+    git clone https://github.com/NeelBhowmik/imfication.git
     ~~~
 
 2. Install **pytorch >= 1.7.0** with torchvision (that matches the PyTorch installation - [link](https://pytorch.org/)).

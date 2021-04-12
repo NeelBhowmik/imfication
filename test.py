@@ -12,6 +12,7 @@ import torch.nn as nn
 
 # import numpy as np
 import argparse
+from tabulate import tabulate
 # import time
 # import os
 # import copy
@@ -24,37 +25,32 @@ import utils.models as models
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--db",
-    default='s-trig',
-    help="dataset name")
+    help="specify dataset name")
 parser.add_argument(
     "--dbpath",
     default='',
-    help="Specify the dataset directory path")
+    help="specify the dataset directory path")
 parser.add_argument(
     "--dbsplit",
     default='train-val-test',
-    help="Specify the dataset dataset split")
+    help="specify the dataset dataset split")
 parser.add_argument(
     "--datatype",
     type=str,
-    help="Specify the datatype {hlz, xglcm}")
-parser.add_argument(
-    "--mv",
-    action="store_true",
-    help="Perform multiview aggregation")
+    help="specify the datatype {image, video}")
 parser.add_argument(
     "--net",
     default='',
-    help="Select the network {simnet, alexnet,resnet50,...}")
+    help="select the network {alexnet,resnet50,...}")
 parser.add_argument(
     "--ft",
     action="store_true",
-    help="If true - only update the reshaped layer params"
-          "If flase - traning from scratch")
+    help="if true - only update the reshaped layer params"
+         "if flase - traning from scratch")
 parser.add_argument(
     "--pretrained", 
     action="store_true", 
-    help='Use pretrained network.')
+    help='use pretrained network.')
 parser.add_argument(
     "--weight",
     type=str, 
@@ -77,22 +73,25 @@ parser.add_argument(
 parser.add_argument(
     "--cpu",
     action="store_true",
-    help="If selected will run on CPU")
+    help="if selected will run on CPU")
 parser.add_argument(
     '--workers', 
     type=int, 
     help='number of data loading workers', 
     default=2)
-
 parser.add_argument(
     "--statf",
     type=str,
-    help="A directory path to save statistics")
+    help="a directory path to save test statistics")
 
 args = parser.parse_args()
-print('=' * 10)
-print(f'\n{args}\n')
-print('=' * 10)
+args = parser.parse_args()
+t_val = []
+for arg in vars(args):
+    t_val.append([arg, getattr(args, arg)])
+print(tabulate(t_val, 
+    ['input', 'value'], 
+    tablefmt="psql"))   
 ######################################################################
 
 if args.cpu:

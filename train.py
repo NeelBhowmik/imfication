@@ -3,22 +3,17 @@ from __future__ import print_function, division
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
+# import torch.optim as optim
 from torch.optim import lr_scheduler
-from torch.utils.data import Dataset, DataLoader
+# from torch.utils.data import Dataset, DataLoader
 import torchvision
 from torchvision import datasets, models, transforms
 
-import numpy as np
 import time
 import os
-import glob
-import copy
-from PIL import Image
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+from tabulate import tabulate
+
 import argparse 
-from tqdm import tqdm
 from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 
 import utils.dataload as dataload
@@ -57,7 +52,7 @@ parser.add_argument(
 parser.add_argument(
     "--pretrained", 
     action="store_true", 
-    help='use pretrained network.')
+    help='use ImageNet pretrained weight.')
 parser.add_argument(
     "--lr",
     type=float, 
@@ -118,9 +113,12 @@ parser.add_argument(
     help="a directory path to save model output")
 
 args = parser.parse_args()
-print('-' * 10)
-print(f'\n{args}\n')
-print('-' * 10)
+t_val = []
+for arg in vars(args):
+    t_val.append([arg, getattr(args, arg)])
+print(tabulate(t_val, 
+    ['input', 'value'], 
+    tablefmt="psql"))    
 ######################################################################
 
 if args.cpu:
@@ -130,7 +128,7 @@ else:
 
 args.dbsplit = args.dbsplit.split("-")
 
-print(f'|__Train Module: {args.net} || Dataset: {args.db}')
+print(f'\n|__Train Module: {args.net} || Dataset: {args.db}')
 print('|____Start training >>>>')
 
 # data loading
@@ -164,17 +162,17 @@ else:
     # print("\t",model)
 
     params_to_update = model.parameters()
-    print("Params to learn:")
+    print("\n\tParams to learn:")
     if args.ft:
         params_to_update = []
         for name,param in model.named_parameters():
             if param.requires_grad == True:
                 params_to_update.append(param)
-                print("\t",name)
+                print("\t\t",name)
     else:
         for name,param in model.named_parameters():
             if param.requires_grad == True:
-                print("\t",name)
+                print("\t\t",name)
 
     optimizer = optimisers.optimisers(
         args.optim,
@@ -212,7 +210,7 @@ args.statf = None
 
 # calculate model size
 total_params = sum(p.numel() for p in model.parameters())
-print(f'\t|__Model Parameter: ', total_params)
+print(f'\t|__Model Parameter: {total_params}\n')
 
 criterion = nn.CrossEntropyLoss()
 exp_lr_scheduler = lr_scheduler.StepLR(

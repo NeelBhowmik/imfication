@@ -22,6 +22,9 @@ from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 # Just normalization for val/test
 # ---------------------------------
 def data_load(args):
+    if 'inception' in args.net:
+        args.isize = 299
+
     data_transforms = {
         'train': transforms.Compose([
             transforms.Resize((args.isize,args.isize)),

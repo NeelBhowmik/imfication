@@ -25,7 +25,7 @@ from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 
 ######################################################################
 # Model initialization
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# --------------------
 # This helper function sets the .requires_grad attribute of the 
 # parameters in the model to False when we are feature extracting. 
 # By default, when we load a pretrained model all of the parameters 
@@ -41,7 +41,7 @@ def set_parameter_requires_grad(model, feature_extracting):
 
 ######################################################################
 # Model initialization
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# --------------------
 #
 def initialize_model(model_name, num_classes, custom_weight, feature_extract, use_pretrained=True):
     # Initialize these variables which will be set in this if statement. Each of these
@@ -53,13 +53,13 @@ def initialize_model(model_name, num_classes, custom_weight, feature_extract, us
         """
         model_ft = models.__dict__[model_name](pretrained=use_pretrained)
         # set_parameter_requires_grad(model_ft, feature_extract)
-        num_ftrs = model_ft.fc.in_features
-        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+        # num_ftrs = model_ft.fc.in_features
+        # model_ft.fc = nn.Linear(num_ftrs, num_classes)
         # input_size = 224
 
         if custom_weight:
             print('\tFine tune from custom weight>>>>')
-            model_ft.load_state_dict(torch.load(custom_weight)['state_dict'])
+            model_ft.load_state_dict(torch.load(custom_weight, map_location=args.device)['state_dict'])
         set_parameter_requires_grad(model_ft, feature_extract)
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs, num_classes)
@@ -82,7 +82,7 @@ def initialize_model(model_name, num_classes, custom_weight, feature_extract, us
         model_ft.classifier[6] = nn.Linear(num_ftrs,num_classes)
         # input_size = 224
 
-    elif model_name == "squeezenet":
+    elif "squeezenet" in model_name:
         """ Squeezenet
         """
         model_ft = models.__dict__[model_name](pretrained=use_pretrained)
@@ -91,7 +91,7 @@ def initialize_model(model_name, num_classes, custom_weight, feature_extract, us
         model_ft.num_classes = num_classes
         # input_size = 224
 
-    elif model_name == "densenet":
+    elif "densenet" in model_name:
         """ Densenet
         """
         model_ft = models.__dict__[model_name](pretrained=use_pretrained)
@@ -100,30 +100,85 @@ def initialize_model(model_name, num_classes, custom_weight, feature_extract, us
         model_ft.classifier = nn.Linear(num_ftrs, num_classes)
         # input_size = 224
 
-    # elif model_name == "inception_v3":
-    #     """ Inception v3
-    #     Be careful, expects (299,299) sized images and has auxiliary output
+    elif model_name == "inception_v3":
+        """ Inception v3
+        Be careful, expects (299,299) sized images and has auxiliary output
+        """
+        model_ft = models.__dict__[args.net](pretrained=use_pretrained)
+        set_parameter_requires_grad(model_ft, feature_extract)
+        # Handle the auxilary net
+        num_ftrs = model_ft.AuxLogits.fc.in_features
+        model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
+        # Handle the primary net
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs,num_classes)
+    #     input_size = 299
+
+    # elif "googlenet" in model_name:
+    #     """ GoogLeNet
     #     """
-    #     model_ft = models.__dict__[args.net](pretrained=use_pretrained)
+    #     model_ft = models.__dict__[model_name](pretrained=use_pretrained)
+    #     if custom_weight:
+    #         print('\tFine tune from custom weight>>')
+    #         model_ft.load_state_dict(torch.load(custom_weight, map_location=args.device)['state_dict'])
     #     set_parameter_requires_grad(model_ft, feature_extract)
+        
     #     # Handle the auxilary net
-    #     num_ftrs = model_ft.AuxLogits.fc.in_features
-    #     model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_classes)
+    #     # num_ftrs = model_ft.aux1.fc.in_features
+    #     # model_ft.aux1.fc = nn.Linear(num_ftrs, num_classes)
+    #     # num_ftrs = model_ft.aux2.fc.in_features
+    #     # model_ft.aux2.fc = nn.Linear(num_ftrs, num_classes)
     #     # Handle the primary net
     #     num_ftrs = model_ft.fc.in_features
     #     model_ft.fc = nn.Linear(num_ftrs,num_classes)
-    #     input_size = 299
+        
+    elif "shufflenet" in model_name:
+        """ ShuffleNet
+        """
+        model_ft = models.__dict__[model_name](pretrained=use_pretrained)
+        if custom_weight:
+            print('\tFine tune from custom weight>>')
+            model_ft.load_state_dict(torch.load(custom_weight, map_location=args.device)['state_dict'])
+        set_parameter_requires_grad(model_ft, feature_extract)
+        num_ftrs = model_ft.fc.in_features
+        model_ft.fc = nn.Linear(num_ftrs, num_classes)
+    
+    elif "mobilenet" in model_name:
+        """ MobileNet
+        """
+        model_ft = models.__dict__[model_name](pretrained=use_pretrained)
+        if custom_weight:
+            print('\tFine tune from custom weight>>')
+            model_ft.load_state_dict(torch.load(custom_weight, map_location=args.device)['state_dict'])
+        set_parameter_requires_grad(model_ft, feature_extract)
+        if model_name == 'mobilenet_v2':
+            num_ftrs = model_ft.classifier[1].in_features
+            model_ft.classifier[1] = nn.Linear(num_ftrs, num_classes)
+        # if model_name == 'mobilenet_v3_large' or model_name == 'mobilenet_v3_small':
+        #     num_ftrs = model_ft.classifier[3].in_features
+        #     model_ft.classifier[3] = nn.Linear(num_ftrs, num_classes)
+    
+    elif "mnasnet" in model_name:
+        """ MNASNet
+        """
+        model_ft = models.__dict__[model_name](pretrained=use_pretrained)
+        if custom_weight:
+            print('\tFine tune from custom weight>>')
+            model_ft.load_state_dict(torch.load(custom_weight, map_location=args.device)['state_dict'])
+        set_parameter_requires_grad(model_ft, feature_extract)
+        num_ftrs = model_ft.classifier[1].in_features
+        model_ft.classifier[1] = nn.Linear(num_ftrs, num_classes)
+        # input_size = 224
 
     else:
-        print("Invalid model name, exiting...")
+        print(f"{model_name}: Invalid model name, exiting...")
         exit()
 
     return model_ft
 
 #####################################################################
 # Visualize a few images
-# ^^^^^^^^^^^^^^^^^^^^^^
-# Let's visualize a few training images so as to understand the data augmentations.
+# ----------------------
 
 def imshow(inp, title=None):
     """Imshow for Tensor."""
@@ -140,15 +195,7 @@ def imshow(inp, title=None):
 ######################################################################
 # Training the model
 # ------------------
-#
-# Now, let's write a general function to train a model. Here, we will
-# illustrate:
-#
-# -  Scheduling the learning rate
-# -  Saving the best model
-#
-# In the following, parameter ``scheduler`` is an LR scheduler object from
-# ``torch.optim.lr_scheduler``.
+
 
 def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, scheduler, num_epochs=10):
     since = time.time()
@@ -246,7 +293,7 @@ def save_weights(model, epoch, args, is_best=False):
 
 ######################################################################
 # Test the model predictions with statistics
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ------------------------------------------
 def test_model(args, model, criterion, test_data, dataset_sizes):
     print('|____Start testing >>')
     test_loss = 0.0
@@ -289,23 +336,6 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
             else:    
                 labels_lst = labels_lst + labels.cpu().detach().tolist()
                 pred_lst = pred_lst + preds.cpu().detach().tolist()
-
-            # print('labels_lst: ',labels.cpu().detach())
-            # print('pred_lst  : ',preds.cpu().detach())
-
-            # print('Labels: ', labels.cpu().detach() )
-            # print('Pred: ', preds.cpu().detach() )    
-            
-            # Statistics
-            # tn, fp, fn, tp = confusion_matrix(
-            #     labels.cpu().detach(), 
-            #     preds.cpu().detach(), 
-            #     labels=[0, 1]).ravel()
-            
-            # tn_t += tn
-            # fp_t += fp
-            # fn_t += fn
-            # tp_t += tp
     
     print('labels_lst: ',labels_lst)
     print('pred_lst: ',pred_lst)
@@ -320,7 +350,7 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
 
 ######################################################################
 # Save test statistics in csv file
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# --------------------------------
 def csv_write(args, stats):
     stat_dir = f'{args.statf}/{args.db}/{args.net}'
     os.makedirs(stat_dir, exist_ok=True)
@@ -332,7 +362,7 @@ def csv_write(args, stats):
 
 ######################################################################
 # Test statistics confusion matrix
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# --------------------------------
 def stat(args, labels_lst,pred_lst):
     cnf_mtx = confusion_matrix(
                 labels_lst, 
@@ -422,10 +452,8 @@ def stat(args, labels_lst,pred_lst):
 
 ######################################################################
 # Visualizing the model predictions
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# Generic function to display predictions for a few images
-#
+# ---------------------------------
+
 def visualize_model(model, num_images=6):
     was_training = model.training
     model.eval()

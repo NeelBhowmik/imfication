@@ -29,37 +29,35 @@ import utils.optimisers as optimisers
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--db",
-    default='s-trig',
-    help="dataset name")
+    help="specify the dataset name")
 parser.add_argument(
     "--dbpath",
-    default='',
-    help="Specify the dataset directory path")
+    help="specify the dataset directory path")
 parser.add_argument(
     "--dbsplit",
     default='train-val-test',
-    help="Specify the dataset dataset split")
+    help="specify the dataset dataset split")
 parser.add_argument(
     "--datatype",
     type=str,
-    help="Specify the datatype {hlz, xglcm}")
+    help="specify the datatype {image, video}")
 parser.add_argument(
     "--net",
     default='',
-    help="Select the network {simnet, alexnet,resnet50,...}")
+    help="select the network {alexnet,resnet50,...}")
 parser.add_argument(
     "--optim",
     default='SGD',
-    help="Select optimizer {SGD, Adam}")
+    help="select optimizer {SGD, Adam}")
 parser.add_argument(
     "--ft",
     action="store_true",
-    help="If true - only update the reshaped layer params"
-          "If flase - traning from scratch")
+    help="if true - only update the reshaped layer params"
+         "if flase - traning from scratch")
 parser.add_argument(
     "--pretrained", 
     action="store_true", 
-    help='Use pretrained network.')
+    help='use pretrained network.')
 parser.add_argument(
     "--lr",
     type=float, 
@@ -88,7 +86,7 @@ parser.add_argument(
     "--ichannel",
     type=int, 
     default=3,
-    help='input data channel no')
+    help='input data channel number')
 parser.add_argument(
     "--isize",
     type=int, 
@@ -107,21 +105,22 @@ parser.add_argument(
 parser.add_argument(
     "--cpu",
     action="store_true",
-    help="If selected will run on CPU")
+    help="if selected will run on CPU")
 parser.add_argument(
     '--workers', 
     type=int, 
     help='number of data loading workers', 
     default=2)
-
 parser.add_argument(
     "--outf",
-    help="A directory path to save model output")
+    type=str, 
+    default='logs',
+    help="a directory path to save model output")
 
 args = parser.parse_args()
-print('=' * 10)
+print('-' * 10)
 print(f'\n{args}\n')
-print('=' * 10)
+print('-' * 10)
 ######################################################################
 
 if args.cpu:
@@ -136,8 +135,8 @@ print('|____Start training >>>>')
 
 # data loading
 print('\t|__Data loading >>')
-# dataloaders, dataset_sizes, class_names = dataload.data_load(args)
-dataloaders, dataset_sizes, class_names = dataload.data_load_np(args)
+dataloaders, dataset_sizes, class_names = dataload.data_load(args)
+# dataloaders, dataset_sizes, class_names = dataload.data_load_np(args)
 
 # initialise model
 print('\t|__Model initilisation >>')
@@ -146,149 +145,9 @@ if not(args.ft) and not(args.pretrained):
 else:
     print('\t|__Finetuning the convnet >>')
 
-if args.net == 'simnet1':
-    # model = models.simnet(len(class_names))
-    if args.custom_weight:
-        model = models.simnet1(
-            no_ch=args.ichannel, 
-            num_classes=7)
-    
-    else:
-        model = models.simnet1(
-            no_ch=args.ichannel, 
-            num_classes=len(class_names))
-
-    model = model.to(args.device)
-    print("\t",model)
-
-    # if args.optim == 'SGD':
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, momentum=args.momentum)
-    # else:
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, weight_decay=0.0001)
-    
-    if args.custom_weight:
-        model.load_state_dict(torch.load(args.custom_weight)['state_dict'])
-        models.set_parameter_requires_grad(model, args.ft)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, len(class_names))
-
-    model = model.to(args.device)
-    print("\t",model)
-
-    params_to_update = model.parameters()
-    print("Params to learn:")
-    if args.ft:
-        params_to_update = []
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                params_to_update.append(param)
-                print("\t",name)
-    else:
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                print("\t",name)
-
-    optimizer = optimisers.optimisers(
-        args.optim,
-        model,
-        lr=args.lr, 
-        momentum=args.momentum, 
-        weight_decay=args.weight_decay)
-
-
-elif args.net == 'simnet2':
-    if args.custom_weight:
-        model = models.simnet2(
-            no_ch=args.ichannel, 
-            num_classes=7)
-    else:
-        model = models.simnet2(
-            no_ch=args.ichannel, 
-            num_classes=len(class_names))
-    # if args.optim == 'SGD':
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, momentum=args.momentum)
-    # else:
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, weight_decay=0.0001)
-
-    if args.custom_weight:
-        model.load_state_dict(torch.load(args.custom_weight)['state_dict'])
-        models.set_parameter_requires_grad(model, args.ft)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, len(class_names))
-
-    model = model.to(args.device)
-    print("\t",model)
-
-    params_to_update = model.parameters()
-    print("Params to learn:")
-    if args.ft:
-        params_to_update = []
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                params_to_update.append(param)
-                print("\t",name)
-    else:
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                print("\t",name)
-
-    optimizer = optimisers.optimisers(
-        args.optim,
-        model,
-        lr=args.lr, 
-        momentum=args.momentum, 
-        weight_decay=args.weight_decay)
-
-    # print("\tParams to learn:")
-    # for name, param in model.named_parameters():
-    #     print("\t",name)
-    
-elif args.net == 'simnet3':
-    if args.custom_weight:
-        model = models.simnet3(
-            no_ch=args.ichannel, 
-            num_classes=7)
-    else:
-        model = models.simnet3(
-            no_ch=args.ichannel, 
-            num_classes=len(class_names))
-
-    if args.custom_weight:
-        model.load_state_dict(torch.load(args.custom_weight)['state_dict'])
-        models.set_parameter_requires_grad(model, args.ft)
-        num_ftrs = model.fc.in_features
-        model.fc = nn.Linear(num_ftrs, len(class_names))
-
-    model = model.to(args.device)
-    print("\t",model)
-
-    params_to_update = model.parameters()
-    print("Params to learn:")
-    if args.ft:
-        params_to_update = []
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                params_to_update.append(param)
-                print("\t",name)
-    else:
-        for name,param in model.named_parameters():
-            if param.requires_grad == True:
-                print("\t",name)
-
-    optimizer = optimisers.optimisers(
-        args.optim,
-        model,
-        lr=args.lr, 
-        momentum=args.momentum, 
-        weight_decay=args.weight_decay)
+if args.net == 'svm':
+    print('Yet to implement.')
+    exit()
 
 else:
     model = models.initialize_model(
@@ -323,18 +182,6 @@ else:
         lr=args.lr, 
         momentum=args.momentum, 
         weight_decay=args.weight_decay)
-
-    # if args.optim == 'SGD':
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, momentum=args.momentum)
-    # else:
-    #     optimizer = optim.__dict__[args.optim](
-    #         model.parameters(), 
-    #         lr=args.lr, weight_decay=0.0001)
-
-# # use device - cuda/cpu
-# model = model.to(args.device)
 
 # Gather the parameters to be optimized/updated in this run. If we are
 # finetuning we will be updating all parameters. However, if we are
@@ -392,8 +239,5 @@ models.test_model(
     dataloaders['test'], 
     dataset_sizes
 )
-
-# plt.ioff()
-# plt.show()
 
 print('\n[Done]\n')

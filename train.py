@@ -19,7 +19,8 @@ from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 import utils.dataload as dataload
 import utils.models as models
 import utils.optimisers as optimisers
-       
+
+#####################################################################       
 # parse command line arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -119,7 +120,7 @@ for arg in vars(args):
 print(tabulate(t_val, 
     ['input', 'value'], 
     tablefmt="psql"))    
-######################################################################
+#####################################################################
 
 if args.cpu:
     args.device = torch.device('cpu')
@@ -134,7 +135,6 @@ print('|____Start training >>>>')
 # data loading
 print('\t|__Data loading >>')
 dataloaders, dataset_sizes, class_names = dataload.data_load(args)
-# dataloaders, dataset_sizes, class_names = dataload.data_load_np(args)
 
 # initialise model
 print('\t|__Model initilisation >>')
@@ -154,9 +154,6 @@ else:
         args.custom_weight,
         feature_extract=args.ft, 
         use_pretrained=args.pretrained)
-
-    # if args.custom_weight:
-    #     model.load_state_dict(torch.load(args.custom_weight)['state_dict'])
 
     model = model.to(args.device)
     # print("\t",model)
@@ -181,36 +178,11 @@ else:
         momentum=args.momentum, 
         weight_decay=args.weight_decay)
 
-# Gather the parameters to be optimized/updated in this run. If we are
-# finetuning we will be updating all parameters. However, if we are
-# doing feature extract method, we will only update the parameters
-# that we have just initialized, i.e. the parameters with requires_grad
-# is True.
-
 args.statf = None
-
-# params_to_update = model.parameters()
-# print("Params to learn:")
-# if args.ft:
-#     params_to_update = []
-#     for name,param in model.named_parameters():
-#         if param.requires_grad == True:
-#             params_to_update.append(param)
-#             print("\t",name)
-# else:
-#     for name,param in model.named_parameters():
-#         if param.requires_grad == True:
-#             print("\t",name)
-
-
-# Setup the optimiser, loss fn, scheduler
-# optimizer = optim.SGD(
-#     params_to_update, 
-#     lr=args.lr, momentum=args.momentum)
 
 # calculate model size
 total_params = sum(p.numel() for p in model.parameters())
-print(f'\t|__Model Parameter: {total_params}\n')
+print(f'\t|__Model parameter: {total_params}\n')
 
 criterion = nn.CrossEntropyLoss()
 exp_lr_scheduler = lr_scheduler.StepLR(

@@ -196,11 +196,13 @@ def imshow(inp, title=None):
 # Training the model
 # ------------------
 
-
 def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, scheduler, num_epochs=10):
     since = time.time()
 
+    train_acc_history = []
+    train_ls_history = []
     test_acc_history = []
+    test_ls_history = []
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
@@ -264,8 +266,16 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
                 best_model_wts = copy.deepcopy(model.state_dict())
                 # save best model weights
                 save_weights(model, epoch, args, is_best=True)
+            
+            if phase == 'train':
+                # print(epoch_acc.cpu().detach().tolist())
+                train_acc_history.append(epoch_acc.cpu().detach().tolist())
+                train_ls_history.append(epoch_loss)
             if phase == 'test':
-                test_acc_history.append(epoch_acc)   
+                # print(epoch_acc)
+                test_acc_history.append(epoch_acc.cpu().detach().tolist())
+                test_ls_history.append(epoch_loss)
+               
 
         print()
 
@@ -276,6 +286,14 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
 
     # load best model weights
     model.load_state_dict(best_model_wts)
+
+    # plot train/val/test loss/acc
+    args.plt_name = 'loss'
+    stat_plot(args, train_ls_history, test_ls_history)
+    args.plt_name = 'accuracy'
+    stat_plot(args, train_acc_history, test_acc_history)
+   
+
     return model, test_acc_history
 
 #####################################################################
@@ -291,6 +309,26 @@ def save_weights(model, epoch, args, is_best=False):
     if is_best: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_final.pth')
     else: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_{epoch}.pth')
 
+######################################################################
+# plot traning/val/test loss/accuracy
+# ------------------------------------------
+def stat_plot(args, train_history, test_history):
+    ohist = []
+    shist = []
+
+    # ohist = [h.numpy() for h in train_history]
+    # shist = [h.numpy() for h in test_history]
+    plt.clf()
+    plt.title(f"{args.plt_name} vs. epochs")
+    plt.xlabel("epochs")
+    plt.ylabel(args.plt_name)
+    plt.plot(range(1,args.epoch +1),train_history,label="train")
+    plt.plot(range(1,args.epoch+1),test_history,label="test")
+    plt.ylim((0,1.))
+    plt.xticks(np.arange(1, args.epoch+1, 1.0))
+    plt.legend()
+    # plt.show()
+    plt.savefig(f'{args.outf}/{args.db}/{args.net}_{args.lr}/train/weights/{args.plt_name}.png')
 ######################################################################
 # Test the model predictions with statistics
 # ------------------------------------------
@@ -312,30 +350,9 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
 
             loss = criterion(outputs, labels)
             test_loss += loss.item()*inputs.size(0)
-
-            if args.mv:
-                
-                # print('==\nlabl---->', labels.cpu().detach().tolist())
-                # print('1pre---->',preds.cpu().detach().tolist())
-                l_lst = labels.cpu().detach().tolist()
-                p_lst =  preds.cpu().detach().tolist()
-                p_lst_n =  []
-                # for i, p in enumerate(p_lst):
-                if p_lst[0] == l_lst[0] or p_lst[1] == l_lst[0]:
-                    p_lst_n.append(l_lst[0])
-                    p_lst_n.append(l_lst[1])
-                else:
-                    p_lst_n = p_lst_n + p_lst
-
-                # print('2pre---->',p_lst_n)    
-                
-                labels_lst = labels_lst + l_lst
-                pred_lst = pred_lst + p_lst_n
-
-
-            else:    
-                labels_lst = labels_lst + labels.cpu().detach().tolist()
-                pred_lst = pred_lst + preds.cpu().detach().tolist()
+ 
+            labels_lst = labels_lst + labels.cpu().detach().tolist()
+            pred_lst = pred_lst + preds.cpu().detach().tolist()
     
     print('labels_lst: ',labels_lst)
     print('pred_lst: ',pred_lst)

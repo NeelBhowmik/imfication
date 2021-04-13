@@ -11,6 +11,7 @@ import torch.nn as nn
 # import matplotlib.pyplot as plt
 
 # import numpy as np
+import os
 import argparse
 from tabulate import tabulate
 # import time
@@ -32,7 +33,7 @@ parser.add_argument(
     help="specify the dataset directory path")
 parser.add_argument(
     "--dbsplit",
-    default='train-val-test',
+    default='test',
     help="specify the dataset dataset split")
 parser.add_argument(
     "--datatype",
@@ -43,15 +44,6 @@ parser.add_argument(
     default='',
     help="select the network {alexnet,resnet50,...}")
 parser.add_argument(
-    "--ft",
-    action="store_true",
-    help="if true - only update the reshaped layer params"
-         "if flase - traning from scratch")
-parser.add_argument(
-    "--pretrained", 
-    action="store_true", 
-    help='use pretrained network.')
-parser.add_argument(
     "--weight",
     type=str, 
     help='path to model weight file')
@@ -61,11 +53,6 @@ parser.add_argument(
     default=32,
     help='input testing batch size')
 parser.add_argument(
-    "--ichannel",
-    type=int, 
-    default=3,
-    help='input data channel no')
-parser.add_argument(
     "--isize",
     type=int, 
     default=224,
@@ -74,6 +61,10 @@ parser.add_argument(
     "--cpu",
     action="store_true",
     help="if selected will run on CPU")
+parser.add_argument(
+    "--trt",
+    action="store_true",
+    help="if selected will run on TensorRT")    
 parser.add_argument(
     '--workers', 
     type=int, 
@@ -101,35 +92,25 @@ else:
 
 args.dbsplit = args.dbsplit.split("-")
 
-print(f'|__Test Module: {args.net} || Dataset: {args.db}')
+print(f'\n|__Test Module: {args.net} || Dataset: {args.db}')
+print('|____Start testing >>>>')
 
 # data loading
-print('|____Data loading >>')
+print('\t|__Data loading >>')
+dataloaders, dataset_sizes, class_names = dataload.data_load(args)
 
-# dataloaders, dataset_sizes, class_names = dataload.data_load(args)
-dataloaders, dataset_sizes, class_names = dataload.data_load_np(args)
-args.cls_name = class_names
-args.custom_weight = None
 # initialise model
-print('|____Model initilisation >>')
+print('\t|__Model initilisation >>')
 
-if args.net == 'simnet1':
-    # model = models.simnet(len(class_names))
-    model = models.simnet1(
-        no_ch=args.ichannel, 
-        num_classes=len(class_names))
-    
-elif args.net == 'simnet2':
-    model = models.simnet2(
-        no_ch=args.ichannel, 
-        num_classes=len(class_names))
-
-elif args.net == 'simnet3':
-    model = models.simnet3(
-        no_ch=args.ichannel, 
-        num_classes=len(class_names))
-        
+if args.net == 'svm':
+    print('Yet to implement.')
+    exit()  
 else:
+    # only needed for traning 
+    # setting as None/False for test/inference
+    args.custom_weight = None
+    args.ft = False
+    args.pretrained = False
     model = models.initialize_model(
         args.net, 
         len(class_names),
@@ -137,14 +118,18 @@ else:
         feature_extract=args.ft, 
         use_pretrained=args.pretrained)
 
-# load pretrained weight
+# load the given weight file
 if args.weight:
-    print("|____Loading Model Weight >>")
-    model.load_state_dict(torch.load(args.weight, map_location=args.device)['state_dict'])
-    # model.load_state_dict(torch.load(args.weight, map_location=args.device))
-    # print("\t|__Done.\n")
+    if os.path.isfile(args.weight):
+        print('\t|__Loading model weight >>')
+        model.load_state_dict(
+            torch.load(args.weight, 
+            map_location=args.device)['state_dict'])
+    else:
+        print('\t|__Model weight path not found')
+        exit()
 else:
-    print('Model weight not found')
+    print('\t|__Model weight not found')
     exit()
 
 model.eval()
@@ -154,14 +139,14 @@ criterion = nn.CrossEntropyLoss()
 
 # calculate model size
 total_params = sum(p.numel() for p in model.parameters())
-print(f'\t|__Model Parameter: ', total_params)
+print(f'\t|__Model parameter: ', total_params)
 
 # test set statistics 
 models.test_model(
     args, 
     model, 
     criterion, 
-    dataloaders[args.dbsplit[2]], 
+    dataloaders[args.dbsplit[0]], 
     dataset_sizes
 )
 

@@ -141,7 +141,7 @@ print('\t|__Model initilisation >>')
 if not(args.ft) and not(args.pretrained):
     print('\t|__Traning from scratch >>')
 else:
-    print('\t|__Finetuning the convnet >>')
+    print('\t|__Finetuning the network >>')
 
 if args.net == 'svm':
     print('Yet to implement.')
@@ -201,7 +201,8 @@ model, hist = models.train_model(
     num_epochs=args.epoch
 )
 
-# test set statistics 
+# test set statistics
+print('\n|____Start testing >>>>')
 models.test_model(
     args, 
     model, 

@@ -142,6 +142,7 @@ total_params = sum(p.numel() for p in model.parameters())
 print(f'\t|__Model parameter: ', total_params)
 
 # test set statistics 
+print('\n|____Start testing >>>>')
 models.test_model(
     args, 
     model, 

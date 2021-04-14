@@ -15,6 +15,7 @@ import time
 import os
 import glob
 import copy
+from tabulate import tabulate
 from PIL import Image
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
@@ -313,11 +314,7 @@ def save_weights(model, epoch, args, is_best=False):
 # plot traning/val/test loss/accuracy
 # ------------------------------------------
 def stat_plot(args, train_history, test_history):
-    ohist = []
-    shist = []
 
-    # ohist = [h.numpy() for h in train_history]
-    # shist = [h.numpy() for h in test_history]
     plt.clf()
     plt.title(f"{args.plt_name} vs. epochs")
     plt.xlabel("epochs")
@@ -333,7 +330,6 @@ def stat_plot(args, train_history, test_history):
 # Test the model predictions with statistics
 # ------------------------------------------
 def test_model(args, model, criterion, test_data, dataset_sizes):
-    print('|____Start testing >>')
     test_loss = 0.0
     tn_t, fp_t, fn_t, tp_t = 0, 0, 0, 0
 
@@ -354,16 +350,16 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
             labels_lst = labels_lst + labels.cpu().detach().tolist()
             pred_lst = pred_lst + preds.cpu().detach().tolist()
     
-    print('labels_lst: ',labels_lst)
-    print('pred_lst: ',pred_lst)
+    # print('labels_lst: ',labels_lst)
+    # print('pred_lst: ',pred_lst)
 
-    print('-' * 20)
+    # print('-' * 20)
     print("Test Statistics:\n")
     # average test loss
     test_loss = test_loss/dataset_sizes[args.dbsplit[2]]
     print('Test Loss: {:.4f}\n'.format(test_loss))
     stat(args, labels_lst, pred_lst)
-    print('-' * 20)
+    # print('-' * 20)
 
 ######################################################################
 # Save test statistics in csv file
@@ -406,7 +402,6 @@ def stat(args, labels_lst,pred_lst):
     PPV_array = np.array(PPV)
     PPV_array = np.nan_to_num(PPV_array)
     PPV = list(PPV_array)
-    
     # Negative predictive value
     NPV = TN/(TN+FN)
     # Fall out or false positive rate
@@ -439,16 +434,16 @@ def stat(args, labels_lst,pred_lst):
     stats.append(['F1', str(F1av)])
     stats.append(['Precesion', str(PPVav)])
     stats.append(['Accuracy', str(ACCav)])
-    stats.append(['Tex_stat', tex_stat])
+    # stats.append(['Tex_stat', tex_stat])
 
     # print('*' * 20)
-    print('Stats from confusion Matrix:')
-    print('Class-wise:')
-    print(f'TPR: {TPR}\nTNR: {TNR}\nFPR: {FPR}\nFNR: {FNR}\nACC: {ACC}')
-    print('\nOverall:')
-    # print(f'TPR: {round(TPRav,3)}\nTNR: {round(TNRav,3)}\nFPR: {round(FPRav,3)}\nFNR: {round(FNRav,3)}\nACC: {round(ACCav,3)}')
-    print(f'TPR: {TPRav}\nFPR: {FPRav}\nF Score: {F1av}\nPrecesion: {PPVav} \nAccuracy: {ACCav}')
-    print('\nTex version:', tex_stat)
+    # print('Stats from confusion Matrix:')
+    # print('Class-wise:')
+    # print(f'TPR: {TPR}\nTNR: {TNR}\nFPR: {FPR}\nFNR: {FNR}\nACC: {ACC}')
+    print('\nOverall/Mean:')
+    print(tabulate(stats, tablefmt="psql"))
+    # print(f'TPR: {TPRav}\nFPR: {FPRav}\nF Score: {F1av}\nPrecesion: {PPVav} \nAccuracy: {ACCav}')
+    # print('\nTex version:', tex_stat)
     
     ####            
 

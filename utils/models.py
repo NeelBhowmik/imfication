@@ -3,26 +3,21 @@ from __future__ import print_function, division
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
+# import torch.optim as optim
 import torch.nn.functional as F
-from torch.optim import lr_scheduler
-from torch.utils.data import Dataset, DataLoader
-import torchvision
-from torchvision import datasets, models, transforms
+# from torch.optim import lr_scheduler
+# import torchvision
+from torchvision import models
 
 import numpy as np
 import time
 import os
-import glob
 import copy
 from tabulate import tabulate
-from PIL import Image
+import logging
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
-import argparse 
 from tqdm import tqdm
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple
-
 
 ######################################################################
 # Model initialization
@@ -204,16 +199,26 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
     train_ls_history = []
     test_acc_history = []
     test_ls_history = []
+    args.work_dir = f'{args.work_dir}/{args.db}/{args.net}_{args.lr}/train/weights'
+    os.makedirs(args.work_dir, exist_ok=True)
+    log_file = f'{args.work_dir}/logs.log'
+    logging.basicConfig(filename=log_file, 
+                filemode='w',
+                level=logging.INFO,
+                format='%(asctime)s - %(message)s', 
+                datefmt='%d-%m-%Y %H:%M:%S')
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
     best_epoch = 0
 
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        epoch_txt = f'Epoch: {epoch+1}/{num_epochs}'
+        print(f'\n{epoch_txt}')
         print('-' * 10)
 
         # Each epoch has a training and validation phase
+        phase_txt = ''
         for phase in ['train', 'test']:
             if phase == 'train':
                 model.train()  # Set model to training mode
@@ -252,10 +257,9 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
 
             epoch_loss = running_loss / dataset_sizes[phase]
             epoch_acc = running_corrects.double() / dataset_sizes[phase]
-
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_acc))
-
+                 
+            phase_txt = f'{phase_txt} {phase} loss: {round(epoch_loss, 4)} {phase} acc: {round(epoch_acc.item(), 4)}'
+            print(f'{phase} loss: {round(epoch_loss, 4)}, {phase} acc: {round(epoch_acc.item(), 4)}')
             # save model at each epoch
             if (epoch+1)%args.save_freq == 0:
                 save_weights(model, epoch, args)    
@@ -265,9 +269,11 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
                 best_acc = epoch_acc
                 best_epoch = epoch
                 best_model_wts = copy.deepcopy(model.state_dict())
+                bestacc_t = f'Best test Acc: {round(best_acc.item(),4)} Epoch: {best_epoch+1}'
+                print(bestacc_t)    
                 # save best model weights
                 save_weights(model, epoch, args, is_best=True)
-            
+
             if phase == 'train':
                 # print(epoch_acc.cpu().detach().tolist())
                 train_acc_history.append(epoch_acc.cpu().detach().tolist())
@@ -276,15 +282,16 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
                 # print(epoch_acc)
                 test_acc_history.append(epoch_acc.cpu().detach().tolist())
                 test_ls_history.append(epoch_loss)
-               
-
-        print()
-
+            
+        log_txt = f'{epoch_txt} {phase_txt} {bestacc_t}'        
+        logging.info(log_txt)
+       
     time_elapsed = time.time() - since
-    print('Training complete in {:.0f}m {:.0f}s'.format(
-        time_elapsed // 60, time_elapsed % 60))
-    print('Best test Acc: {:4f}'.format(best_acc), f'Epoch: {best_epoch}')
-
+    tr_time = 'Training complete in {:.0f}m {:.0f}s'.format(
+        time_elapsed // 60, time_elapsed % 60)
+    print(f'\n{tr_time}\n{bestacc_t}')
+    logging.info(f'{tr_time}, {bestacc_t}')
+    
     # load best model weights
     model.load_state_dict(best_model_wts)
 
@@ -294,8 +301,7 @@ def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, s
     args.plt_name = 'accuracy'
     stat_plot(args, train_acc_history, test_acc_history)
    
-
-    return model, test_acc_history
+    return model
 
 #####################################################################
 # Save the best model weight
@@ -305,8 +311,8 @@ def save_weights(model, epoch, args, is_best=False):
     Args:
         epoch ([int]): Current epoch number.
     """
-    weight_dir = f'{args.outf}/{args.db}/{args.net}_{args.lr}/train/weights'
-    os.makedirs(weight_dir, exist_ok=True)
+    weight_dir = args.work_dir
+    # os.makedirs(weight_dir, exist_ok=True)
     if is_best: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_final.pth')
     else: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_{epoch}.pth')
 
@@ -325,7 +331,8 @@ def stat_plot(args, train_history, test_history):
     plt.xticks(np.arange(1, args.epoch+1, 1.0))
     plt.legend()
     # plt.show()
-    plt.savefig(f'{args.outf}/{args.db}/{args.net}_{args.lr}/train/weights/{args.plt_name}.png')
+    plt.savefig(f'{args.work_dir}/{args.plt_name}.png')
+
 ######################################################################
 # Test the model predictions with statistics
 # ------------------------------------------
@@ -350,10 +357,6 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
             labels_lst = labels_lst + labels.cpu().detach().tolist()
             pred_lst = pred_lst + preds.cpu().detach().tolist()
     
-    # print('labels_lst: ',labels_lst)
-    # print('pred_lst: ',pred_lst)
-
-    # print('-' * 20)
     print("Test Statistics:\n")
     # average test loss
     test_loss = test_loss/dataset_sizes[args.dbsplit[2]]
@@ -368,10 +371,10 @@ def csv_write(args, stats):
     stat_dir = f'{args.statf}/{args.db}/{args.net}'
     os.makedirs(stat_dir, exist_ok=True)
 
-    with open(stat_dir + "/stat.csv", "w") as outfile:
+    with open(stat_dir + "/stat.csv", "w") as work_dirile:
         for s in stats:
-            outfile.write(f'{s[0]},{s[1]}\n')
-    outfile.close()
+            work_dirile.write(f'{s[0]},{s[1]}\n')
+    work_dirile.close()
 
 ######################################################################
 # Test statistics confusion matrix
@@ -427,23 +430,48 @@ def stat(args, labels_lst,pred_lst):
     ACCav = round(sum(ACC)/(len(ACC)), 3)
     F1av  = round(sum(F1)/(len(F1)), 3)
 
-    stats = []
+    cls_stat = []
+    cls_stat.append(['Class', 'TPR', 'FPR', 'F1', 'Precesion', 'Accuracy'])
+    for i, cls_n in enumerate(args.class_names):
+        s_c = [cls_n, 
+            str(round(TPR[i],3)), 
+            str(round(FPR[i],3)),
+            str(round(F1[i],3)),
+            str(round(PPV[i],3)),
+            str(round(ACC[i],3))
+        ]
+        cls_stat.append(s_c)
+        
+    cls_stat.append(['All-cls', 
+        str(TPRav), 
+        str(FPRav), 
+        str(F1av), 
+        str(PPVav), 
+        str(ACCav)])
     tex_stat = f'{TPRav} & {FPRav} & {F1av} & {PPVav} & {ACCav}'
-    stats.append(['TPR', str(TPRav)])
-    stats.append(['FPR', str(FPRav)])
-    stats.append(['F1', str(F1av)])
-    stats.append(['Precesion', str(PPVav)])
-    stats.append(['Accuracy', str(ACCav)])
+
+    # header = ['Class', 'TPR', 'FPR', 'F1', 'Precesion', 'Accuracy']
+    print(tabulate(cls_stat, 
+        headers="firstrow",
+        tablefmt="psql"))    
+
+    # stats = []
+    # stats.append(str(TPRav))
+    # stats.append(str(FPRav))
+    # stats.append(str(F1av))
+    # stats.append(str(PPVav))
+    # stats.append(str(ACCav))
+    # stats.append(['TPR', str(TPRav)])
+    # stats.append(['FPR', str(FPRav)])
+    # stats.append(['F1', str(F1av)])
+    # stats.append(['Precesion', str(PPVav)])
+    # stats.append(['Accuracy', str(ACCav)])
     # stats.append(['Tex_stat', tex_stat])
 
-    # print('*' * 20)
-    # print('Stats from confusion Matrix:')
-    # print('Class-wise:')
-    # print(f'TPR: {TPR}\nTNR: {TNR}\nFPR: {FPR}\nFNR: {FNR}\nACC: {ACC}')
-    print('\nOverall/Mean:')
-    print(tabulate(stats, tablefmt="psql"))
-    # print(f'TPR: {TPRav}\nFPR: {FPRav}\nF Score: {F1av}\nPrecesion: {PPVav} \nAccuracy: {ACCav}')
-    # print('\nTex version:', tex_stat)
+    # print('\nOverall/Mean:')
+    # print(tabulate(stats,
+    #     header, 
+    #     tablefmt="psql"))
     
     ####            
 

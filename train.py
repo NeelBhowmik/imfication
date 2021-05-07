@@ -12,9 +12,8 @@ from torchvision import datasets, models, transforms
 import time
 import os
 from tabulate import tabulate
-
 import argparse 
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple
+# from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 
 import utils.dataload as dataload
 import utils.models as models
@@ -108,7 +107,7 @@ parser.add_argument(
     help='number of data loading workers', 
     default=2)
 parser.add_argument(
-    "--outf",
+    "--work_dir",
     type=str, 
     default='logs',
     help="a directory path to save model output")
@@ -135,6 +134,7 @@ print('|____Start training >>>>')
 # data loading
 print('\t|__Data loading >>')
 dataloaders, dataset_sizes, class_names = dataload.data_load(args)
+args.class_names = class_names
 
 # initialise model
 print('\t|__Model initilisation >>')
@@ -191,7 +191,7 @@ exp_lr_scheduler = lr_scheduler.StepLR(
     gamma=0.1)
 
 # start training
-model, hist = models.train_model(
+model = models.train_model(
     args,
     model, criterion, 
     dataloaders,

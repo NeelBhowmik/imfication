@@ -76,7 +76,7 @@ parser.add_argument(
     help="a directory path to save test statistics")
 
 args = parser.parse_args()
-args = parser.parse_args()
+
 t_val = []
 for arg in vars(args):
     t_val.append([arg, getattr(args, arg)])

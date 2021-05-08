@@ -13,6 +13,7 @@ import numpy as np
 import time
 import os
 import copy
+import csv
 from tabulate import tabulate
 import logging
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
@@ -192,7 +193,10 @@ def imshow(inp, title=None):
 # Training the model
 # ------------------
 
-def train_model(args, model, criterion, dataloaders, dataset_sizes, optimizer, scheduler, num_epochs=10):
+def train_model(args, model, 
+        criterion, dataloaders, 
+        dataset_sizes, optimizer, 
+        scheduler, num_epochs=10):
     since = time.time()
 
     train_acc_history = []
@@ -313,8 +317,12 @@ def save_weights(model, epoch, args, is_best=False):
     """
     weight_dir = args.work_dir
     # os.makedirs(weight_dir, exist_ok=True)
-    if is_best: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_final.pth')
-    else: torch.save({'epoch': epoch, 'state_dict': model.state_dict()}, f'{weight_dir}/net_{epoch}.pth')
+    if is_best: torch.save({'epoch': epoch, 
+        'state_dict': model.state_dict()}, 
+        f'{weight_dir}/net_final.pth')
+    else: torch.save({'epoch': epoch, 
+        'state_dict': model.state_dict()}, 
+        f'{weight_dir}/net_{epoch}.pth')
 
 ######################################################################
 # plot traning/val/test loss/accuracy
@@ -344,7 +352,8 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
     pred_lst = []
 
     with torch.no_grad():
-        for i, (inputs, labels) in enumerate(test_data):
+        # for i, (inputs, labels) in enumerate(test_data):
+        for (inputs, labels) in tqdm(test_data):
             # print(path)
             inputs = inputs.to(args.device)
             labels = labels.to(args.device)
@@ -359,7 +368,7 @@ def test_model(args, model, criterion, test_data, dataset_sizes):
     
     print("Test Statistics:\n")
     # average test loss
-    test_loss = test_loss/dataset_sizes[args.dbsplit[2]]
+    test_loss = test_loss/dataset_sizes['test']
     print('Test Loss: {:.4f}\n'.format(test_loss))
     stat(args, labels_lst, pred_lst)
     # print('-' * 20)
@@ -371,10 +380,16 @@ def csv_write(args, stats):
     stat_dir = f'{args.statf}/{args.db}/{args.net}'
     os.makedirs(stat_dir, exist_ok=True)
 
-    with open(stat_dir + "/stat.csv", "w") as work_dirile:
-        for s in stats:
-            work_dirile.write(f'{s[0]},{s[1]}\n')
-    work_dirile.close()
+    with open(f'{stat_dir}/stat.csv', "w", newline='') as statf:
+        writer = csv.writer(statf)
+        for line in stats:  
+            writer.writerow(line)
+    statf.close()   
+
+    # with open(stat_dir + "/stat.csv", "w") as work_dirile:
+    #     for s in stats:
+    #         work_dirile.write(f'{s[0]},{s[1]}\n')
+    # work_dirile.close()
 
 ######################################################################
 # Test statistics confusion matrix
@@ -441,7 +456,8 @@ def stat(args, labels_lst,pred_lst):
             str(round(ACC[i],3))
         ]
         cls_stat.append(s_c)
-        
+    
+    cls_stat.append(['', '', '', '', '', ''])
     cls_stat.append(['All-cls', 
         str(TPRav), 
         str(FPRav), 
@@ -450,40 +466,24 @@ def stat(args, labels_lst,pred_lst):
         str(ACCav)])
     tex_stat = f'{TPRav} & {FPRav} & {F1av} & {PPVav} & {ACCav}'
 
-    # header = ['Class', 'TPR', 'FPR', 'F1', 'Precesion', 'Accuracy']
     print(tabulate(cls_stat, 
         headers="firstrow",
         tablefmt="psql"))    
 
-    # stats = []
-    # stats.append(str(TPRav))
-    # stats.append(str(FPRav))
-    # stats.append(str(F1av))
-    # stats.append(str(PPVav))
-    # stats.append(str(ACCav))
-    # stats.append(['TPR', str(TPRav)])
-    # stats.append(['FPR', str(FPRav)])
-    # stats.append(['F1', str(F1av)])
-    # stats.append(['Precesion', str(PPVav)])
-    # stats.append(['Accuracy', str(ACCav)])
-    # stats.append(['Tex_stat', tex_stat])
-
-    # print('\nOverall/Mean:')
-    # print(tabulate(stats,
-    #     header, 
-    #     tablefmt="psql"))
-    
-    ####            
-
     # stats write in csv file
     # confusion matrix generation
     if args.statf:
-        csv_write(args, stats)
+        csv_write(args, cls_stat)
 
-        cnf_mtx_display = ConfusionMatrixDisplay(cnf_mtx, display_labels=args.cls_name)
+        cnf_mtx_display = ConfusionMatrixDisplay(cnf_mtx, 
+            display_labels=args.class_names)
+
         _, ax = plt.subplots(figsize=(10, 9))
         plt.rcParams.update({'font.size': 14})
-        cnf_mtx_display.plot(ax=ax, values_format='.2f',xticks_rotation=45)
+        cnf_mtx_display.plot(ax=ax, 
+            values_format='.2f',
+            xticks_rotation=45, 
+            cmap='plasma')
 
         stat_dir = f'{args.statf}/{args.db}/{args.net}'
         os.makedirs(stat_dir, exist_ok=True)

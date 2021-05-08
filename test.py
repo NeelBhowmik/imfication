@@ -98,6 +98,7 @@ print('|____Start testing >>>>')
 # data loading
 print('\t|__Data loading >>')
 dataloaders, dataset_sizes, class_names = dataload.data_load(args)
+args.class_names = class_names
 
 # initialise model
 print('\t|__Model initilisation >>')
@@ -139,10 +140,10 @@ criterion = nn.CrossEntropyLoss()
 
 # calculate model size
 total_params = sum(p.numel() for p in model.parameters())
-print(f'\t|__Model parameter: ', total_params)
+print(f'\t|__Model parameter: {total_params}\n')
 
 # test set statistics 
-print('\n|____Start testing >>>>')
+# print('\n|____Start testing >>>>')
 models.test_model(
     args, 
     model, 

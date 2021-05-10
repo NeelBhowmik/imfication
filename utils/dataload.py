@@ -64,3 +64,37 @@ def data_load(args):
     print('\tdataloaders: ', dataset_sizes)
  
     return dataloaders, dataset_sizes, class_names
+
+##########################################################################
+# read/process image and apply tranformation
+def read_img(frame):
+    
+    if isinstance(frame, str):
+        frame = cv2.imread(frame)
+    
+    np_transforms = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.485, 0.456, 0.406), 
+        (0.229, 0.224, 0.225))
+    ])
+    
+    small_frame = cv2.resize(frame, (224, 224), cv2.INTER_AREA)
+    small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
+    small_frame = Image.fromarray(small_frame)
+    small_frame = np_transforms(small_frame).float()
+    small_frame = small_frame.unsqueeze(0)
+    return small_frame
+
+##########################################################################
+
+# extract class names
+def extract_clsname(cls_name):
+    
+    if os.path.isfile(cls_name):
+        print('Read from file')
+    else:
+        cls_name = cls_name.split("-")
+
+    return cls_name
+
+##########################################################################

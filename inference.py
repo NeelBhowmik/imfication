@@ -3,12 +3,9 @@
 # Example : perform live fire detection in image/video/webcam using
 # NasNet-A-OnFire, ShuffleNetV2-OnFire CNN models.
 
-# Copyright (c) 2020/21 - William Thompson / Neelanjan Bhowmik / Toby
-# Breckon, Durham University, UK
+# Copyright (c) 2021 - Neelanjan Bhowmik
 
 # License :
-# https://github.com/NeelBhowmik/efficient-compact-fire-detection-cnn/blob/main/LICENSE
-
 ##########################################################################
 
 import cv2
@@ -20,9 +17,13 @@ import argparse
 import time
 import numpy as np
 import math
+from tabulate import tabulate
 
 import torch
 import torchvision.transforms as transforms
+
+import utils.dataload as dataload
+import utils.models as models
 
 ##########################################################################
 
@@ -69,7 +70,6 @@ def run_model_img(args, frame, model):
 
 # drawing prediction on image
 
-
 def draw_pred(args, frame, pred, fps_frame):
     height, width, _ = frame.shape
     if prediction == 1:
@@ -92,8 +92,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--image",
     help="Path to image file or image directory")
-parser.add_argument
-    ("--video",
+parser.add_argument(
+    "--video",
     help="Path to video file or video directory")
 parser.add_argument(
     "--webcam",
@@ -109,31 +109,61 @@ parser.add_argument(
     action="store_true",
     help="Model run on TensorRT")
 parser.add_argument(
-    "--model",
-    default='shufflenetonfire',
-    help="Select the model {shufflenetonfire, nasnetonfire}")
+    "--net",
+    type=str,
+    choices=['resnet18', 'resnet34', 'resnet50', 'resnet101',
+        'vgg16', 'vgg16', 'alexnet', 'squeezenet'
+        'densenet', 'shufflenet', 'mobilenet_v2', 'mnasnet'],
+    help="select the network")
 parser.add_argument(
     "--weight", 
     help="Model weight file path")
 parser.add_argument(
+    "--cls_name", 
+    help="class names - accept below formats:"
+        "1. - separated: n0-n1-n2"
+        "2. class name file path")
+parser.add_argument(
+    '--activemap', 
+    type=str, 
+    default='gradcam',
+    choices=['gradcam', 'gradcam++', 'scorecam', 'xgradcam',
+            'ablationcam', 'eigencam', 'eigengradcam'],
+    help='visualise class activation map using gradcam based methods')
+parser.add_argument(
     "--cpu",
     action="store_true",
-    help="If selected will run on CPU")
+    help="if selected will run on CPU")
 parser.add_argument(
     "--output",
-    help="A directory path to save output visualisations."
-    "If not given , will show output in an OpenCV window.")
+    help="a directory path to save output visualisations.")
+parser.add_argument(
+    '--show',
+    action='store_true',
+    help='whether show the results on the fly on an OpenCV window.')
 parser.add_argument(
     "-fs",
     "--fullscreen",
     action='store_true',
     help="run in full screen mode")
 args = parser.parse_args()
-print(f'\n{args}')
+t_val = []
+for arg in vars(args):
+    t_val.append([arg, getattr(args, arg)])
+print(tabulate(t_val, 
+    ['input', 'value'], 
+    tablefmt="psql"))   
 ##########################################################################
+if args.cpu:
+    args.device = torch.device('cpu')
+else:
+    args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 # define display window name
 WINDOW_NAME = 'Prediction'
+
+print(f'\n|__Inference Module >>>>')
+print(f'\t|__Inference using: {args.net} >>')
 
 # uses cuda if available
 if args.cpu:
@@ -145,37 +175,26 @@ if args.cpu and args.trt:
     print(f'\n>>TensorRT runs only on gpu. Exit.')
     exit()
 
-print('\n\nBegin {fire, no-fire} classification :')
+# initialise model
+print('\t|__Model initilisation >>')
 
-# model load
-if args.model == "shufflenetonfire":
-    model = shufflenetv2.shufflenet_v2_x0_5(
-        pretrained=False, layers=[
-            4, 8, 4], output_channels=[
-            24, 48, 96, 192, 64], num_classes=1)
-    if args.weight:
-        w_path = args.weight
-    else:
-        w_path = './weights/shufflenet_ff.pt'
-    model.load_state_dict(torch.load(w_path, map_location=device))
-elif args.model == "nasnetonfire":
-    model = nasnet_mobile_onfire.nasnetamobile(num_classes=1, pretrained=False)
-    if args.weight:
-        w_path = args.weight
-    else:
-        w_path = './weights/nasnet_ff.pt'
-    model.load_state_dict(torch.load(w_path, map_location=device))
+args.cls_name = dataload.extract_clsname(args.cls_name)
+if args.net == 'svm':
+    print('Yet to implement.')
+    exit()  
 else:
-    print('Invalid Model.')
-    exit()
+    model = models.init_model(args)
 
-# apply data transform
-np_transforms = data_transform(args.model)
+print(model.features)
 
-print(f'|__Model loading: {args.model}')
-
+# load the given weight file
+model = models.load_weight(args, model)
 model.eval()
-model.to(device)
+model.to(args.device)
+
+# calculate model size
+total_params = sum(p.numel() for p in model.parameters())
+print(f'\t|__Model parameter: {total_params}\n')
 
 # TensorRT conversion
 if args.trt:
@@ -184,11 +203,13 @@ if args.trt:
     data = torch.randn((1, 3, 224, 224)).float().to(device)
     model_trt = torch2trt(model, [data], int8_mode=True)
     model_trt.to(device)
-    print(f'\t|__TensorRT activated.')
+    print(f'\t|__TensorRT activated >>')
+
+if args.output:
+    os.makedirs(args.output, exist_ok=True)
 
 # load and process input image directory or image file
 if args.image:
-
     # list image from a directory or file
     if os.path.isdir(args.image):
         lst_img = os.listdir(args.image)
@@ -197,23 +218,21 @@ if args.image:
     if os.path.isfile(args.image):
         lst_img = [args.image]
 
-    if args.output:
-        os.makedirs(args.output, exist_ok=True)
-
     fps = []
     # start processing image
     for im in lst_img:
         print('\t|____Image processing: ', im)
         start_t = time.time()
-        frame = cv2.imread(im)
+        # frame = cv2.imread(im)
 
-        small_frame = read_img(frame, np_transforms)
-
+        frame = read_img(im)
+        frame  = frame.to(device)
+        
         # model prediction
         if args.trt:
-            prediction = run_model_img(args, small_frame, model_trt)
+            prediction = run_model_img(args, frame, model_trt)
         else:
-            prediction = run_model_img(args, small_frame, model)
+            prediction = run_model_img(args, frame, model)
 
         stop_t = time.time()
         fps_frame = int(1 / (stop_t - start_t))

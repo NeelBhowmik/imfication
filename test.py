@@ -107,7 +107,7 @@ if args.net == 'svm':
     print('Yet to implement.')
     exit()  
 else:
-    # only needed for traning 
+    # only needed for training 
     # setting as None/False for test/inference
     args.custom_weight = None
     args.ft = False
@@ -127,10 +127,10 @@ if args.weight:
             torch.load(args.weight, 
             map_location=args.device)['state_dict'])
     else:
-        print('\t|__Model weight path not found')
+        print('\t|__[ERROR] Model weight path not found')
         exit()
 else:
-    print('\t|__Model weight not found')
+    print('\t|__[ERROR] Model weight not found')
     exit()
 
 model.eval()

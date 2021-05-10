@@ -522,3 +522,55 @@ def visualize_model(model, num_images=6):
         model.train(mode=was_training)
 
 ######################################################################
+# Model initialisation during test/inference
+# ------------------------------------------
+def init_model(args):
+    # only needed for training 
+    # setting as None/False for test/inference
+    net_list = ['resnet18', 'resnet34', 'resnet50', 'resnet101',
+        'vgg16', 'vgg16', 'alexnet', 'squeezenet'
+        'densenet', 'shufflenet', 'mobilenet_v2', 'mnasnet']
+
+    if args.net in net_list:
+        args.custom_weight = None
+        args.ft = False
+        args.pretrained = False
+        model = initialize_model(
+            args.net, 
+            len(args.cls_name),
+            args.custom_weight,
+            feature_extract=args.ft, 
+            use_pretrained=args.pretrained)
+    else:
+        print(f'\t|__Invalid model name: {args.net}')
+        exit()
+    
+######################################################################
+# Model weight load from weight file
+# during test/inference
+# -----------------------------------
+def load_weight(args, model):
+    if args.weight:
+        if os.path.isfile(args.weight):
+            print('\t|__Loading model weight >>')
+            model.load_state_dict(
+                torch.load(args.weight, 
+                map_location=args.device)['state_dict'])
+            return model
+        else:
+            print(f'\t|__[ERROR] Invalid model weight: {args.weight}')
+            exit()
+    else:
+        print(f'\t|__[ERROR] Model weight missing: {args.weight}')
+        exit()
+######################################################################
+# model prediction on image
+# -----------------------------------
+def run_model(model, input):
+    outputs = model(inputs)
+    _, preds = torch.max(outputs, 1)
+
+    loss = criterion(outputs, labels)
+    test_loss += loss.item()*inputs.size(0)
+    
+    pred_lst = pred_lst + preds.cpu().detach().tolist()[0]

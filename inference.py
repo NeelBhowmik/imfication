@@ -157,18 +157,18 @@ if args.output:
 
 if args.activemap:
     print(f'\t|__Using activation map: {args.activemap}')
-
+    cam, gb_model = vis.init_activecam(args, model)
 
 # load and process input image directory or image file
 if args.image:
     # list image from a directory or file
     if os.path.isdir(args.image):
-        lst_img = os.listdir(args.image)
+        # lst_img = os.listdir(args.image)
         lst_img = [os.path.join(args.image, file)
-                   for file in os.listdir(args.image)]
+                   for file in sorted(os.listdir(args.image))]
     if os.path.isfile(args.image):
         lst_img = [args.image]
-
+    
     fps = []
     # start processing image
     for im in lst_img:
@@ -195,8 +195,10 @@ if args.image:
 
         # Activation map visualisation
         cam_img = im_cv
-        if args.activemap:
-            cam_img = vis.activecam(args, im, model)
+        if args.activemap:  
+            # cam_model, gb_model = vis.init_activecam(args, model)
+            cam_img = vis.activecam(args, im, cam, gb_model)
+            # cam_img = vis.activecam(args, im, model)
         # save prdiction visualisation in output path
         # display in opencv if args.show == Ture
         # display prdiction if output path is not provided
@@ -237,7 +239,7 @@ if args.video or args.webcam:
     try:
         # to use a non-buffered camera stream (via a separate thread)
         if not(args.video):
-            from models import camera_stream
+            from utils import camera_stream
             cap = camera_stream.CameraVideoStream()
         else:
             cap = cv2.VideoCapture()  # not needed for video files
@@ -284,6 +286,16 @@ if args.video or args.webcam:
                     frameSize=(width, height),
                     isColor=True,
                 )
+            
+            if args.output and args.video and args.activemap:
+                f_name = os.path.basename(vid)
+                out_map = cv2.VideoWriter(
+                    filename=f'{args.output}/{f_name}_{args.activemap}',
+                    fourcc=cv2.VideoWriter_fourcc(*'mp4v'),
+                    fps=float(fps),
+                    frameSize=(width, height),
+                    isColor=True,
+                )
 
             while (keepProcessing):
                 start_t = time.time()
@@ -292,34 +304,95 @@ if args.video or args.webcam:
 
                 # if camera/video file successfully open then read frame
                 if (cap.isOpened):
-                    ret, frame = cap.read()
+                    ret, im = cap.read()
                     # when we reach the end of the video (file) exit cleanly
                     if (ret == 0):
                         keepProcessing = False
                         continue
 
-                small_frame = read_img(frame, np_transforms)
-
+                # small_frame = read_img(frame, np_transforms)
+                frame = dataload.read_img(im)
+                frame = frame.to(args.device)
+                
                 # model prediction
                 if args.trt:
-                    prediction = run_model_img(args, small_frame, model_trt)
+                    prediction = models.run_model(model_trt, frame)
                 else:
-                    prediction = run_model_img(args, small_frame, model)
+                    prediction = models.run_model(model, frame)
 
                 stop_t = time.time()
                 fps_frame = int(1 / (stop_t - start_t))
-
+                # # drawing prediction output
+                # frame = draw_pred(args, frame, prediction, fps_frame)
                 # drawing prediction output
-                frame = draw_pred(args, frame, prediction, fps_frame)
+                im_cv, result = vis.draw_pred(args, im, prediction)
 
+                # Activation map visualisation
+                cam_img = im_cv
+                if args.activemap:
+                    cam_img = vis.activecam(args, im, cam, gb_model)
+                    # cam_img = vis.activecam(args, im, model)
                 # save prdiction visualisation in output path
-                # only for video input, not for webcam input
-                if args.output and args.video:
-                    out.write(frame)
-
+                # display in opencv if args.show == Ture
                 # display prdiction if output path is not provided
+                # press space key to continue/next
+                combine_img = cv2.hconcat([im_cv, cam_img])
+                              
+                if args.output and args.show:
+                    if args.video:
+                        out.write(im_cv)
+                        if args.activemap:
+                            out_map.write(cam_img)
+                    if args.activemap:
+                        cv2.imshow(WINDOW_NAME, combine_img)
+                    else:        
+                        cv2.imshow(WINDOW_NAME, im_cv)
+                    
+                    cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN,
+                                          cv2.WINDOW_FULLSCREEN & args.fullscreen)
+
+                    stop_tik = ((cv2.getTickCount() - start_tik) /
+                                cv2.getTickFrequency()) * 1000
+                    key = cv2.waitKey(
+                        max(2, 40 - int(math.ceil(stop_tik)))) & 0xFF
+
+                    # press "x" for exit  / press "f" for fullscreen
+                    if (key == ord('x')):
+                        keepProcessing = False
+                    elif (key == ord('f')):
+                        args.fullscreen = not(args.fullscreen)
+
+                elif args.output and args.video:
+                    out.write(im_cv)
+                    if args.activemap:
+                        out_map.write(cam_img)
+
+                elif args.show:
+                    if args.activemap:
+                        cv2.imshow(WINDOW_NAME, combine_img)
+                    else:        
+                        cv2.imshow(WINDOW_NAME, im_cv)
+                    
+                    cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN,
+                                          cv2.WINDOW_FULLSCREEN & args.fullscreen)
+
+                    stop_tik = ((cv2.getTickCount() - start_tik) /
+                                cv2.getTickFrequency()) * 1000
+                    key = cv2.waitKey(
+                        max(2, 40 - int(math.ceil(stop_tik)))) & 0xFF
+
+                    # press "x" for exit  / press "f" for fullscreen
+                    if (key == ord('x')):
+                        keepProcessing = False
+                    elif (key == ord('f')):
+                        args.fullscreen = not(args.fullscreen)
+
                 else:
-                    cv2.imshow(WINDOW_NAME, frame)
+                    if args.activemap:
+                        cv2.imshow(WINDOW_NAME, combine_img)
+                    else:        
+                        cv2.imshow(WINDOW_NAME, im_cv)
+                    
                     cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN,
                                           cv2.WINDOW_FULLSCREEN & args.fullscreen)
 
@@ -336,6 +409,8 @@ if args.video or args.webcam:
 
         if args.output and args.video:
             out.release()
+            if args.activecam:
+                out_map.release()
         else:
             cv2.destroyAllWindows()
 

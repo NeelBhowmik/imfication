@@ -544,6 +544,7 @@ def init_model(args):
     else:
         print(f'\t|__Invalid model name: {args.net}')
         exit()
+    return model
     
 ######################################################################
 # Model weight load from weight file
@@ -567,10 +568,15 @@ def load_weight(args, model):
 # model prediction on image
 # -----------------------------------
 def run_model(model, input):
-    outputs = model(inputs)
-    _, preds = torch.max(outputs, 1)
-
-    loss = criterion(outputs, labels)
-    test_loss += loss.item()*inputs.size(0)
+    sm = nn.Softmax(dim = 1)
+    with torch.no_grad():
+        outputs = model(input)
+        outputs = sm(outputs)
+        _, preds = torch.max(outputs, 1)
+        prediction = preds.cpu().detach().tolist()[0]
+        output = outputs.cpu().detach().numpy()
+        
+    results = {'clsidx': prediction, 
+        'score': output[0][prediction]}
     
-    pred_lst = pred_lst + preds.cpu().detach().tolist()[0]
+    return results

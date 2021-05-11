@@ -24,6 +24,7 @@ import torchvision.transforms as transforms
 
 import utils.dataload as dataload
 import utils.models as models
+import utils.visualise as vis
 
 ##########################################################################
 
@@ -122,7 +123,13 @@ parser.add_argument(
     "--cls_name", 
     help="class names - accept below formats:"
         "1. - separated: n0-n1-n2"
-        "2. class name file path")
+        "2. class name file path") 
+parser.add_argument(
+    "--conf_thrs",
+    type=float,
+    default=0.3,
+    help="classification confidence threshold"
+    "in between {0-1}")
 parser.add_argument(
     '--activemap', 
     type=str, 
@@ -167,9 +174,9 @@ print(f'\t|__Inference using: {args.net} >>')
 
 # uses cuda if available
 if args.cpu:
-    device = torch.device('cpu')
+    args.device = torch.device('cpu')
 else:
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 if args.cpu and args.trt:
     print(f'\n>>TensorRT runs only on gpu. Exit.')
@@ -185,7 +192,7 @@ if args.net == 'svm':
 else:
     model = models.init_model(args)
 
-print(model.features)
+# print(model.features)
 
 # load the given weight file
 model = models.load_weight(args, model)
@@ -202,7 +209,7 @@ if args.trt:
     from torch2trt import torch2trt
     data = torch.randn((1, 3, 224, 224)).float().to(device)
     model_trt = torch2trt(model, [data], int8_mode=True)
-    model_trt.to(device)
+    model_trt.to(args.device)
     print(f'\t|__TensorRT activated >>')
 
 if args.output:
@@ -221,40 +228,46 @@ if args.image:
     fps = []
     # start processing image
     for im in lst_img:
-        print('\t|____Image processing: ', im)
+        print('\n|__Image processing: ', im)
         start_t = time.time()
         # frame = cv2.imread(im)
 
-        frame = read_img(im)
-        frame  = frame.to(device)
+        frame = dataload.read_img(im)
+        frame = frame.to(args.device)
         
         # model prediction
         if args.trt:
             prediction = run_model_img(args, frame, model_trt)
         else:
-            prediction = run_model_img(args, frame, model)
+            prediction = models.run_model(model, frame)
 
         stop_t = time.time()
         fps_frame = int(1 / (stop_t - start_t))
         fps.append(fps_frame)
 
         # drawing prediction output
-        frame = draw_pred(args, frame, prediction, fps_frame)
-
+        im_cv, result = vis.draw_pred(args, im, prediction)
+        print(f'\t|__{result}')
         # save prdiction visualisation in output path
-        if args.output:
-            f_name = os.path.basename(im)
-            cv2.imwrite(f'{args.output}/{f_name}', frame)
-
+        # display in opencv if args.show == Ture
         # display prdiction if output path is not provided
         # press space key to continue/next
+        if args.output:
+            f_name = os.path.basename(im)
+            cv2.imwrite(f'{args.output}/{f_name}', im_cv)
+        elif args.output and args.show:
+            f_name = os.path.basename(im)
+            cv2.imwrite(f'{args.output}/{f_name}', im_cv) 
+            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+            cv2.imshow(WINDOW_NAME, im_cv)
+            cv2.waitKey(0)
         else:
             cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(WINDOW_NAME, frame)
+            cv2.imshow(WINDOW_NAME, im_cv)
             cv2.waitKey(0)
 
     avg_fps = sum(fps) / len(fps)
-    print(f'\n|__Average fps {int(avg_fps)}')
+    print(f'\n|-->>Average fps {int(avg_fps)}')
 
 # load and process input video file or webcam stream
 if args.video or args.webcam:

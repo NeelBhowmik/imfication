@@ -12,7 +12,6 @@ import cv2
 import os
 import sys
 import math
-from PIL import Image
 import argparse
 import time
 import numpy as np
@@ -20,72 +19,10 @@ import math
 from tabulate import tabulate
 
 import torch
-import torchvision.transforms as transforms
 
 import utils.dataload as dataload
 import utils.models as models
 import utils.visualise as vis
-
-##########################################################################
-
-def data_transform(model):
-    # transforms needed for shufflenetonfire
-    if model == 'shufflenetonfire':
-        np_transforms = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
-        ])
-    # transforms needed for nasnetonfire
-    if model == 'nasnetonfire':
-        np_transforms = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-
-    return np_transforms
-
-##########################################################################
-
-# read/process image and apply tranformation
-
-def read_img(frame, np_transforms):
-    small_frame = cv2.resize(frame, (224, 224), cv2.INTER_AREA)
-    small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
-    small_frame = Image.fromarray(small_frame)
-    small_frame = np_transforms(small_frame).float()
-    small_frame = small_frame.unsqueeze(0)
-    small_frame = small_frame.to(device)
-
-    return small_frame
-
-##########################################################################
-
-# model prediction on image
-
-def run_model_img(args, frame, model):
-    output = model(frame)
-    pred = torch.round(torch.sigmoid(output))
-    return pred
-
-##########################################################################
-
-# drawing prediction on image
-
-def draw_pred(args, frame, pred, fps_frame):
-    height, width, _ = frame.shape
-    if prediction == 1:
-        if args.image or args.webcam:
-            print(f'\t\t|____No-Fire | fps {fps_frame}')
-        cv2.rectangle(frame, (0, 0), (width, height), (0, 0, 255), 2)
-        cv2.putText(frame, 'No-Fire', (int(width / 16), int(height / 4)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    else:
-        if args.image or args.webcam:
-            print(f'\t\t|____Fire | fps {fps_frame}')
-        cv2.rectangle(frame, (0, 0), (width, height), (0, 255, 0), 2)
-        cv2.putText(frame, 'Fire', (int(width / 16), int(height / 4)),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
-    return frame
 
 ##########################################################################
 # parse command line arguments
@@ -122,8 +59,8 @@ parser.add_argument(
 parser.add_argument(
     "--cls_name", 
     help="class names - accept below formats:"
-        "1. - separated: n0-n1-n2"
-        "2. class name file path") 
+        " 1. - separated: n0-n1-n2"
+        " 2. class name file containing: 1-class name in a line" ) 
 parser.add_argument(
     "--conf_thrs",
     type=float,
@@ -133,7 +70,6 @@ parser.add_argument(
 parser.add_argument(
     '--activemap', 
     type=str, 
-    default='gradcam',
     choices=['gradcam', 'gradcam++', 'scorecam', 'xgradcam',
             'ablationcam', 'eigencam', 'eigengradcam'],
     help='visualise class activation map using gradcam based methods')
@@ -184,8 +120,12 @@ if args.cpu and args.trt:
 
 # initialise model
 print('\t|__Model initilisation >>')
+if args.cls_name:
+    args.cls_name = dataload.extract_clsname(args.cls_name)
+else:
+    print(f'[ERROR] Class name not provided: {args.cls_name}')
+    exit()
 
-args.cls_name = dataload.extract_clsname(args.cls_name)
 if args.net == 'svm':
     print('Yet to implement.')
     exit()  
@@ -215,6 +155,10 @@ if args.trt:
 if args.output:
     os.makedirs(args.output, exist_ok=True)
 
+if args.activemap:
+    print(f'\t|__Using activation map: {args.activemap}')
+
+
 # load and process input image directory or image file
 if args.image:
     # list image from a directory or file
@@ -237,7 +181,7 @@ if args.image:
         
         # model prediction
         if args.trt:
-            prediction = run_model_img(args, frame, model_trt)
+            prediction = models.run_model(model_trt, frame)
         else:
             prediction = models.run_model(model, frame)
 
@@ -248,23 +192,41 @@ if args.image:
         # drawing prediction output
         im_cv, result = vis.draw_pred(args, im, prediction)
         print(f'\t|__{result}')
+
+        # Activation map visualisation
+        cam_img = im_cv
+        if args.activemap:
+            cam_img = vis.activecam(args, im, model)
         # save prdiction visualisation in output path
         # display in opencv if args.show == Ture
         # display prdiction if output path is not provided
         # press space key to continue/next
-        if args.output:
-            f_name = os.path.basename(im)
-            cv2.imwrite(f'{args.output}/{f_name}', im_cv)
-        elif args.output and args.show:
-            f_name = os.path.basename(im)
-            cv2.imwrite(f'{args.output}/{f_name}', im_cv) 
-            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(WINDOW_NAME, im_cv)
-            cv2.waitKey(0)
-        else:
-            cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
-            cv2.imshow(WINDOW_NAME, im_cv)
-            cv2.waitKey(0)
+        combine_img = cv2.hconcat([im_cv, cam_img])
+        f_name = os.path.basename(im)
+        vis.vis_write(args, f_name, im_cv, cam_img, combine_img)
+        
+        # if args.output:
+        #     f_name = os.path.basename(im)
+        #     cv2.imwrite(f'{args.output}/{f_name}', im_cv)
+        #     if args.activemap:
+        #         cv2.imwrite(f'{args.output}/{f_name}_{args.activemap}.png', cam_img)
+        # elif args.output and args.show:
+        #     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+        #     f_name = os.path.basename(im)
+        #     cv2.imwrite(f'{args.output}/{f_name}', im_cv)
+        #     if args.activemap:
+        #         cv2.imwrite(f'{args.output}/{f_name}_{args.activemap}.png', cam_img) 
+        #         cv2.imshow(WINDOW_NAME, combine_img)             
+        #     else:
+        #         cv2.imshow(WINDOW_NAME, im_cv)
+        #     cv2.waitKey(0)
+        # else:
+        #     cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+        #     if args.activemap:
+        #         cv2.imshow(WINDOW_NAME, combine_img)             
+        #     else:
+        #         cv2.imshow(WINDOW_NAME, im_cv)
+        #     cv2.waitKey(0)
 
     avg_fps = sum(fps) / len(fps)
     print(f'\n|-->>Average fps {int(avg_fps)}')
@@ -304,9 +266,9 @@ if args.video or args.webcam:
     for vid in lst_vid:
         keepProcessing = True
         if args.video:
-            print('\t|____Video processing: ', vid)
+            print('\t|__Video processing: ', vid)
         if args.webcam:
-            print('\t|____Webcam processing: ')
+            print('\t|__Webcam processing: ', vid)
         if cap.open(vid):
             # get video information
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))

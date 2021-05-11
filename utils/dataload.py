@@ -68,6 +68,7 @@ def data_load(args):
 
 ##########################################################################
 # read/process image and apply tranformation
+# ------------------------------------------
 def read_img(frame):
     
     if isinstance(frame, str):
@@ -87,15 +88,15 @@ def read_img(frame):
     return small_frame
 
 ##########################################################################
-
 # extract class names
+# -------------------
 def extract_clsname(cls_name):
-    
     if os.path.isfile(cls_name):
-        print('Read from file')
+        with open(cls_name) as f:
+            cls_list = [line.rstrip() for line in f]
     else:
-        cls_name = cls_name.split("-")
+        cls_list = cls_name.split("-")
 
-    return cls_name
+    return cls_list
 
 ##########################################################################

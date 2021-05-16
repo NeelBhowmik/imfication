@@ -65,8 +65,7 @@ parser.add_argument(
     "--conf_thrs",
     type=float,
     default=0.3,
-    help="classification confidence threshold"
-    "in between {0-1}")
+    help="classification confidence threshold [0-1]")
 parser.add_argument(
     '--activemap', 
     type=str, 

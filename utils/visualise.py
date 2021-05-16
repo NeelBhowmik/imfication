@@ -64,12 +64,12 @@ def init_activecam(args, model):
         print(f"[ERROR] Invalid model name: {args.net}")
         exit()
 
-    # cam = methods[args.activemap](model=model,
-    #                     target_layer=target_layer,
-    #                     use_cuda=args.device)
-    cam = GradCAM(model=model,
+    cam = methods[args.activemap](model=model,
                         target_layer=target_layer,
                         use_cuda=args.device)
+    # cam = methods[args.method](model=model,
+    #                     target_layer=target_layer,
+    #                     use_cuda=args.device)
     gb_model = GuidedBackpropReLUModel(model=model, 
                         use_cuda=args.device)    
 
@@ -78,39 +78,6 @@ def init_activecam(args, model):
 # visualisation for grad-cam
 # ---------------------------
 def activecam(args, img, cam, gb_model):
-# def activecam(args, img, model):
-    
-    # methods = \
-    #     {"gradcam": GradCAM,
-    #      "scorecam": ScoreCAM,
-    #      "gradcam++": GradCAMPlusPlus,
-    #      "ablationcam": AblationCAM,
-    #      "xgradcam": XGradCAM,
-    #      "eigencam": EigenCAM,
-    #      "eigengradcam": EigenGradCAM}
-    
-    # # Choose the target layer you want to compute the visualization for.
-    # # Usually this will be the last convolutional layer in the model.
-    # # Some common choices can be:
-    # # Resnet18 and 50: model.layer4[-1]
-    # # VGG, densenet161: model.features[-1]
-    # # mnasnet1_0: model.layers[-1]
-    # # You can print the model to help chose the layer
-    # if 'resnet' in args.net:
-    #     target_layer = model.layer4[-1]
-    # elif 'vgg' in args.net:
-    #     target_layer = model.features[-1]
-    # elif 'densenet' in args.net:
-    #     target_layer = model.features[-1]
-    # elif 'mnasnet' in args.net:
-    #     target_layer = model.layers[-1]
-    # else:
-    #     print(f"[ERROR] Invalid model name: {args.net}")
-    #     exit()
-
-    # cam = methods[args.activemap](model=model,
-    #                     target_layer=target_layer,
-    #                     use_cuda=args.device)
     
     if isinstance(img, str):
         rgb_img = cv2.imread(img, 1)[:, :, ::-1]

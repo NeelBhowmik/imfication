@@ -1,10 +1,11 @@
-# Image classification torch
+# Image classification 
 
 Tested using Python >= 3.6.x, [PyTorch >= 1.7](https://pytorch.org/).
 
 ---
 ## Installation
-The code is tested on Ubuntu 18.04 / 20.04.  
+The code is tested on Ubuntu 18.04 / 20.04 / 22.04.  
+
 ### Requirements for Deskop/Laptop
 1. Linux (Ubuntu >= 18.04 / 20.04 distribution)
 2. CUDA >= 11.0, cuDNN >= 8.1.0

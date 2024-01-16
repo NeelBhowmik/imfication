@@ -52,20 +52,21 @@ def init_activecam(args, model):
     # VGG, densenet161: model.features[-1]
     # mnasnet1_0: model.layers[-1]
     # You can print the model to help chose the layer
+    # target_layers = [model.blocks[-1].norm1]
     if 'resnet' in args.net:
-        target_layer = model.layer4[-1]
+        target_layers = [model.layer4[-1]]
     elif 'vgg' in args.net:
-        target_layer = model.features[-1]
+        target_layers = [model.features[-1]]
     elif 'densenet' in args.net:
-        target_layer = model.features[-1]
+        target_layers = [model.features[-1]]
     elif 'mnasnet' in args.net:
-        target_layer = model.layers[-1]
+        target_layers = [model.layers[-1]]
     else:
         print(f"[ERROR] Invalid model name: {args.net}")
         exit()
 
     cam = methods[args.activemap](model=model,
-                        target_layer=target_layer,
+                        target_layers=target_layers,
                         use_cuda=args.device)
     # cam = methods[args.method](model=model,
     #                     target_layer=target_layer,
@@ -78,14 +79,17 @@ def init_activecam(args, model):
 # visualisation for grad-cam
 # ---------------------------
 def activecam(args, img, cam, gb_model):
-    
+   
+
     if isinstance(img, str):
         rgb_img = cv2.imread(img, 1)[:, :, ::-1]
+        rgb_img = cv2.resize(rgb_img, (224, 224), cv2.INTER_AREA)
         # cv2.imshow('Activecam', rgb_img)
         # cv2.waitKey(0)
     else:
         rgb_img = img[:, :, ::-1]
-    
+        rgb_img = cv2.resize(rgb_img, (224, 224), cv2.INTER_AREA)
+            
     # rgb_img = cv2.imread(img, 1)[:, :, ::-1]
     rgb_img = np.float32(rgb_img) / 255
     input_tensor = preprocess_image(rgb_img, mean=[0.485, 0.456, 0.406], 
@@ -101,7 +105,7 @@ def activecam(args, img, cam, gb_model):
     args.aug_smooth = False
     args.eigen_smooth = False
     grayscale_cam = cam(input_tensor=input_tensor,
-                        target_category=target_category,
+                        targets=target_category,
                         aug_smooth=args.aug_smooth,
                         eigen_smooth=args.eigen_smooth)
 

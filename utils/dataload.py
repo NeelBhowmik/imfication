@@ -16,7 +16,6 @@ from PIL import Image
 import cv2
 import argparse 
 from tqdm import tqdm
-from typing import Any, Callable, cast, Dict, List, Optional, Tuple
 
 #####################################################################
 # Data augmentation and normalization for training

@@ -1,15 +1,22 @@
-# Image classification 
+<div align="center">
+<!-- <img src="images/xvision_logo_3.png" width="100px">  -->
 
-Tested using Python >= 3.6.x, [PyTorch >= 1.7](https://pytorch.org/).
+**Imfication: Simple Deep Leaning Based Image Classification Framework**
 
 ---
-## Installation
-The code is tested on Ubuntu 18.04 / 20.04 / 22.04.  
+</div>
 
-### Requirements for Deskop/Laptop
-1. Linux (Ubuntu >= 18.04 / 20.04 distribution)
-2. CUDA >= 11.0, cuDNN >= 8.1.0
-3. Python ≥ 3.6
+# Simple Image classification Framework 
+
+Intro
+
+
+:ant: <small> [[Installation]](#installation) </small> <small> [[Getting started]](#getting-started) </small> <small> [Reference](#frog-reference) </small>
+
+### Updates
+
+## Installation
+The code is tested on Ubuntu 18.04 / 20.04 / 22.04, using Python >= 3.10.x, PyTorch >= 2.0.x.
 
 ### Steps
 0. [Optional] create a new virtual environment.
@@ -28,7 +35,7 @@ The code is tested on Ubuntu 18.04 / 20.04 / 22.04.
     git clone https://github.com/NeelBhowmik/imfication.git
     ~~~
 
-2. Install **pytorch >= 1.7.0** with torchvision (that matches the PyTorch installation - [link](https://pytorch.org/)).
+2. Install **pytorch** with **torchvision** (that matches the PyTorch installation - [link](https://pytorch.org/)).
 
 3. Install the requirements
 
@@ -37,8 +44,11 @@ The code is tested on Ubuntu 18.04 / 20.04 / 22.04.
     ~~~
 ---
 ## Getting started:
+Following is a guide on how to get started with ``imfication``.
 
-1. Dataset sturcture:
+### Preparing Dataset:
+
+**Dataset sturcture:**
 
 ~~~
 dataset
@@ -59,25 +69,23 @@ dataset
             |_img25
 ~~~
 
-2. For traning:
+### Training:
     ~~~
     train.py [-h] [--db DB] [--dbpath DBPATH] [--dbsplit DBSPLIT]
-                [--datatype DATATYPE] [--net NET] [--optim OPTIM] [--ft] [--pretrained]
-                [--lr LR] [--momentum MOMENTUM] [--weight_decay WEIGHT_DECAY]
-                [--custom_weight CUSTOM_WEIGHT] [--batch BATCH] [--ichannel ICHANNEL]
-                [--isize ISIZE] [--epoch EPOCH] [--save_freq SAVE_FREQ] [--cpu]
-                [--workers WORKERS] [--work_dir WORK_DIR]
+                [--net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}]
+                [--optim OPTIM] [--ft] [--pretrained] [--lr LR] [--momentum MOMENTUM] [--weight_decay WEIGHT_DECAY]
+                [--custom_weight CUSTOM_WEIGHT] [--batch BATCH] [--ichannel ICHANNEL] [--isize ISIZE] [--epoch EPOCH]
+                [--save_freq SAVE_FREQ] [--cpu] [--workers WORKERS] [--work_dir WORK_DIR]
 
-    optional arguments:
+    options:
     -h, --help            show this help message and exit
     --db DB               specify the dataset name
     --dbpath DBPATH       specify the dataset directory path
     --dbsplit DBSPLIT     specify the dataset dataset split
-    --datatype DATATYPE   specify the datatype {image, video}
-    --net NET             select the network {alexnet,resnet50,...}
+    --net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}
+                            select the network
     --optim OPTIM         select optimizer {SGD, Adam}
-    --ft                  if true - only update the reshaped layer paramsif flase - traning
-                            from scratch
+    --ft                  if true - only update the reshaped layer paramsif flase - traning from scratch
     --pretrained          use ImageNet pretrained weight.
     --lr LR               initial learning rate for opimisation
     --momentum MOMENTUM   momentum term of optimisation
@@ -96,38 +104,38 @@ dataset
     --work_dir WORK_DIR   a directory path to save model output
     ~~~
 
-3. For testing:
+### Testing:
     ~~~
-    test.py [-h] [--db DB] [--dbpath DBPATH] [--dbsplit DBSPLIT] [--datatype DATATYPE]
-                [--net NET] [--weight WEIGHT] [--batch BATCH] [--isize ISIZE] [--cpu]
-                [--trt] [--workers WORKERS] [--statf STATF]
+    test.py [-h] [--db DB] [--dbpath DBPATH] [--dbsplit DBSPLIT]
+                [--net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}]
+                [--weight WEIGHT] [--batch BATCH] [--isize ISIZE] [--cpu] [--trt] [--workers WORKERS] [--statf STATF]
 
-    optional arguments:
-    -h, --help           show this help message and exit
-    --db DB              specify dataset name
-    --dbpath DBPATH      specify the dataset directory path
-    --dbsplit DBSPLIT    specify the dataset dataset split
-    --datatype DATATYPE  specify the datatype {image, video}
-    --net NET            select the network {alexnet,resnet50,...}
-    --weight WEIGHT      path to model weight file
-    --batch BATCH        input testing batch size
-    --isize ISIZE        input data size
-    --cpu                if selected will run on CPU
-    --trt                if selected will run on TensorRT
-    --workers WORKERS    number of data loading workers
-    --statf STATF        a directory path to save test statistics
+    options:
+    -h, --help            show this help message and exit
+    --db DB               specify dataset name
+    --dbpath DBPATH       specify the dataset directory path
+    --dbsplit DBSPLIT     specify the dataset dataset split
+    --net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}
+                          select the network {alexnet,resnet50,...}
+    --weight WEIGHT       path to model weight file
+    --batch BATCH         input testing batch size
+    --isize ISIZE         input data size
+    --cpu                 if selected will run on CPU
+    --trt                 if selected will run on TensorRT
+    --workers WORKERS     number of data loading workers
+    --statf STATF         a directory path to save test statistics
     ~~~
 
-4. For inference:
+### Inference:
+
     ~~~    
-    inference.py [-h] [--image IMAGE] [--video VIDEO] [--webcam]
-                    [--camera_to_use CAMERA_TO_USE] [--trt]
-                    [--net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg16,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}]
+    inference.py [-h] [--image IMAGE] [--video VIDEO] [--webcam] [--camera_to_use CAMERA_TO_USE] [--trt]
+                    [--net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}]
                     [--weight WEIGHT] [--cls_name CLS_NAME] [--conf_thrs CONF_THRS]
-                    [--activemap {gradcam,gradcam++,scorecam,xgradcam,ablationcam,eigencam,eigengradcam}]
-                    [--cpu] [--output OUTPUT] [--show] [-fs]
+                    [--activemap {gradcam,gradcam++,scorecam,xgradcam,ablationcam,eigencam,eigengradcam}] [--cpu]
+                    [--output OUTPUT] [--show] [-fs]
 
-    optional arguments:
+    options:
     -h, --help            show this help message and exit
     --image IMAGE         Path to image file or image directory
     --video VIDEO         Path to video file or video directory
@@ -135,11 +143,11 @@ dataset
     --camera_to_use CAMERA_TO_USE
                             Specify camera to use for webcam option
     --trt                 Model run on TensorRT
-    --net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg16,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}
+    --net {resnet18,resnet34,resnet50,resnet101,vgg16,vgg19,alexnet,squeezenetdensenet,shufflenet,mobilenet_v2,mnasnet}
                             select the network
     --weight WEIGHT       Model weight file path
-    --cls_name CLS_NAME   class names - accept below formats: 1. - separated: n0-n1-n2 2.
-                            class name file containing: 1-class name in a line
+    --cls_name CLS_NAME   class names - accept below formats: 1. - separated: n0-n1-n2 2. class name textfile containing:
+                            1-class name in a line
     --conf_thrs CONF_THRS
                             classification confidence threshold [0-1]
     --activemap {gradcam,gradcam++,scorecam,xgradcam,ablationcam,eigencam,eigengradcam}
@@ -148,4 +156,16 @@ dataset
     --output OUTPUT       a directory path to save output visualisations.
     --show                whether show the results on the fly on an OpenCV window.
     -fs, --fullscreen     run in full screen mode
+
     ~~~
+
+## :frog: Reference
+If you use this repo and like it, use this to cite it:
+```tex
+@misc{xvision-benchmark,
+      title={Imfication: Simple Image classification Framework},
+      author={Neelanjan Bhowmik},
+      year={2024},
+      url={https://github.com/NeelBhowmik/imfication}
+    }
+```

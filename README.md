@@ -185,7 +185,7 @@ options:
 If you use this repo and like it, use this to cite it:
 ```tex
 @misc{imfication,
-      title={Imfication: Simple Image classification Framework},
+      title={Imfication: A simple image classification framework supporting various Deep-learning architectures},
       author={Neelanjan Bhowmik},
       year={2024},
       url={https://github.com/NeelBhowmik/imfication}

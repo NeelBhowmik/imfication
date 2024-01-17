@@ -27,7 +27,6 @@
 ## :wrench: Installation
 <!-- The code is tested on Ubuntu 18.04 / 20.04 / 22.04, using Python >= 3.10.x, PyTorch >= 2.0.x. -->
 
-### Steps
 0. [Optional] create a new virtual environment.
 
     ~~~
@@ -55,7 +54,7 @@
 ## :plate_with_cutlery: Getting started:
 Following is a guide on how to get started with ``imfication``.
 
-### Preparing Dataset
+### :spider_web: Preparing Dataset
 
 Create/oraganise dataset in the following structure:
 

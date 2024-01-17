@@ -5,7 +5,7 @@
 <!-- </div> -->
 <br>
 
-**Imfication: A simple image classification framework supporting various Deep-leaning architectures.**
+**Imfication: A simple image classification framework supporting various Deep-learning architectures**
 
 :ant: <small> [[Installation]](#wrench-installation) </small> <small> [[Getting started]](#plate_with_cutlery-getting-started) </small> <small> [[Reference]](#frog-reference) </small>
 </div>

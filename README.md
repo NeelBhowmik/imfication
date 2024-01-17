@@ -184,7 +184,7 @@ options:
 ## :frog: Reference
 If you use this repo and like it, use this to cite it:
 ```tex
-@misc{xvision-benchmark,
+@misc{imfication,
       title={Imfication: Simple Image classification Framework},
       author={Neelanjan Bhowmik},
       year={2024},

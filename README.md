@@ -11,7 +11,7 @@
 </div>
 
 ### :parrot: Features
-- [x] Scripts for `train`,`test`,`inference` - run on your **custom dataset**.
+- [x] Scripts for `train`,`test`,`inference` - run on **custom dataset**.
 - [x] Integrated **explainable AI / various [activation maps](https://jacobgil.github.io/pytorch-gradcam-book/introduction.html) (gradcam, etc)** during `inference`.
 - [x] Support demo or `inference` using inputs: **image, video, webcam/usb plugged camera**.
 - [x] Run on resource starved **[nvidia embedded devices](https://www.nvidia.com/en-gb/autonomous-machines/embedded-systems/)**.

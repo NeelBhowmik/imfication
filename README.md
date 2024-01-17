@@ -19,7 +19,7 @@
 
 :space_invader: This repo is constantly updated with the latest algorithms and new features - check in regularly for updates!
 
-#### Upcoming: 
+#### Upcoming
 
 - [~] [TensorRT](https://docs.nvidia.com/deeplearning/tensorrt/install-guide/index.html) support during `test` and `inference`.
 
@@ -78,7 +78,7 @@ dataset
             |_img25
 ~~~
 
-### :fondue: Training:
+### :fondue: Training
 
 Get ready to embark on the training journey! Use `train` script to train cnn architectures on the custom dataset.
 
@@ -118,7 +118,7 @@ options:
 --work_dir WORK_DIR   a directory path to save model output
 ~~~
 
-### :microscope: Testing:
+### :microscope: Testing
 
 It's time to put our model to the test! Use `test` script to get detail statistical analysis/results.
 
@@ -145,7 +145,7 @@ options:
 --statf STATF         a directory path to save test statistics
 ~~~
 
-### :tophat: Inference:
+### :tophat: Inference
 
 Ready to showcase the magic of your trained model?
 Use `inference` script for live demo. Supported inputs: **image, video, webcam/usb plugged camera**.

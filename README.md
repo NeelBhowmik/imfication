@@ -5,16 +5,16 @@
 <!-- </div> -->
 <br>
 
-**Imfication: A simple Deep-leaning based image classification framework supporting various cnn architectures.**
+**Imfication: A simple image classification framework supporting various Deep-leaning architectures.**
 
 :ant: <small> [[Installation]](#wrench-installation) </small> <small> [[Getting started]](#plate_with_cutlery-getting-started) </small> <small> [[Reference]](#frog-reference) </small>
 </div>
 
 ### :parrot: Features
-- [x] Scripts for `train`,`test`,`inference` - run on your *custom dataset*.
+- [x] Scripts for `train`,`test`,`inference` - run on your **custom dataset**.
 - [x] Integrated **explainable AI / various [activation maps](https://jacobgil.github.io/pytorch-gradcam-book/introduction.html) (gradcam, etc)** during `inference`.
 - [x] Support demo or `inference` using inputs: **image, video, webcam/usb plugged camera**.
-- [x] Run on resource starved **[nvidia embedded devices (Jetson series)](https://www.nvidia.com/en-gb/autonomous-machines/embedded-systems/)**.
+- [x] Run on resource starved **[nvidia embedded devices](https://www.nvidia.com/en-gb/autonomous-machines/embedded-systems/)**.
 
 
 :space_invader: This repo is constantly updated with the latest algorithms and new features - check in regularly for updates!
@@ -25,7 +25,7 @@
 
 
 ## :wrench: Installation
-The code is tested on Ubuntu 18.04 / 20.04 / 22.04, using Python >= 3.10.x, PyTorch >= 2.0.x.
+<!-- The code is tested on Ubuntu 18.04 / 20.04 / 22.04, using Python >= 3.10.x, PyTorch >= 2.0.x. -->
 
 ### Steps
 0. [Optional] create a new virtual environment.

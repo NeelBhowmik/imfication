@@ -4,12 +4,13 @@
     <img src="images/ex2.png" alt="Image 2" style="width:400px">
 <!-- </div> -->
 <br>
+
 **Imfication: A simple Deep-leaning based image classification framework supporting various cnn architectures.**
 
 :ant: <small> [[Installation]](#wrench-installation) </small> <small> [[Getting started]](#plate_with_cutlery-getting-started) </small> <small> [[Reference]](#frog-reference) </small>
 </div>
 
-### Features
+### :parrot: Features
 - [x] Scripts for `train`,`test`,`inference` - run on your *custom dataset*.
 - [x] Integrated **explainable AI / various [activation maps](https://jacobgil.github.io/pytorch-gradcam-book/introduction.html) (gradcam, etc)** during `inference`.
 - [x] Support demo or `inference` using inputs: **image, video, webcam/usb plugged camera**.
